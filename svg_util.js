@@ -93,7 +93,7 @@ export async function makeSvgElementWithTextDrawingAnimation(
     webFontUrl = 'https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf'
 ) {
     if (opentype === undefined) {
-        throw new Error('opentype.js가 로드되지 않았습니다.');
+        throw new Error('opentype.js is not loaded.');
     }
 
     let font;
