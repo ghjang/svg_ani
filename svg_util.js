@@ -104,6 +104,29 @@ function loadFont(url) {
     });
 }
 
+function splitPathData(strPathData, charPathCmdCntArr) {
+    const COMMANDS = 'MLQZ';
+    const charPathDataFromStrPathData = [];
+
+    /*
+        패쓰 데이터 문자열에서 각 '명령어와 인자'를 단위로 분리한다.
+        명령어는 1개의 문자이고, 인자는 0개 이상인 것을 가정한다.
+        또, 명령어 앞의 인자에 인자가 있을 경우 그 명령어 인자 사이에 공백이 없다고 가정한다.
+        
+        예) 'M 0 0L 10 0L 10 10L 0 10Z' -> ['M 0 0', 'L 10 0', 'L 10 10', 'L 0 10', 'Z']
+    */
+    const commandsAndArgs = strPathData.split(/(?=[MLQZ])/);
+
+    let index = 0;
+    charPathCmdCntArr.forEach(cmdCnt => {
+        // 각 문자에 대한 패쓰 데이터를 저장
+        charPathDataFromStrPathData.push(commandsAndArgs.slice(index, index + cmdCnt).join(''));
+        index += cmdCnt;
+    });
+
+    return charPathDataFromStrPathData;
+}
+
 export async function makeSvgElementWithTextDrawingAnimation(
     text = 'Hello, World!',
     animationDuration = 0.65,
@@ -127,14 +150,19 @@ export async function makeSvgElementWithTextDrawingAnimation(
     const baseline = fontSize * 1.2;
     const textWidth = font.getAdvanceWidth(text, fontSize);
     const glyphPath = font.getPath(text, 0, baseline, fontSize);
-    const pathData = glyphPath.toPathData();
+    const strPathData = glyphPath.toPathData();
+    const charPathDataArr = text.split('').map(c => font.getPath(`${c}`, 0, baseline, fontSize).toPathData());
 
-    const regex = /M.*?Z/g;
-    const matches = pathData.match(regex);
-    const combinedPaths = combineOverlappingPaths(matches);
+    const charPathCmdCntArr = charPathDataArr.map(data => {
+        const matches = data.match(/[MLQZ]/g);
+        return matches ? matches.length : 0;
+    });
+
+    const charPathDataFromStrPathData = splitPathData(strPathData, charPathCmdCntArr);
+    console.log(charPathDataFromStrPathData);
 
     const svg = createSvgElement(textWidth, textHeight, padding);
-    combinedPaths.forEach((pathData, i) => {
+    charPathDataFromStrPathData.forEach((pathData, i) => {
         const svgPathStroke = createSvgPathElement(pathData);
         const length = svgPathStroke.getTotalLength();
         applyOutlineAnimation(svgPathStroke, length, animationDuration, i);
