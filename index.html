@@ -2,147 +2,17 @@
 <html>
 
 <head>
+    <link rel="stylesheet" href="svg_util.css">
+
+    <script src="https://opentype.js.org/dist/opentype.js"></script>
 </head>
 
 <body>
-    <script src="https://opentype.js.org/dist/opentype.js"></script>
-    <script>
-        function combineOverlappingPaths(matches) {
-            let paths = [];
-            let bboxes = [];
+    <script type="module">
+        import { makeSvgElementWithTextDrawingAnimation as makeSvgElem } from './svg_util.js';
 
-            for (let i = 0; i < matches.length; i++) {
-                let individualPathData = matches[i];
-
-                // 패쓰 데이터에서 점들을 추출합니다.
-                let points = individualPathData.match(/(?:M|L|Q)\s*(-?\d+\.?\d*)\s*(-?\d+\.?\d*)/g).map(point => {
-                    let [x, y] = point.slice(1).split(' ').map(Number);
-                    return { x, y };
-                });
-
-                // 바운딩 박스를 계산합니다.
-                let minX = Math.min(...points.map(point => point.x));
-                let maxX = Math.max(...points.map(point => point.x));
-                let minY = Math.min(...points.map(point => point.y));
-                let maxY = Math.max(...points.map(point => point.y));
-
-                let bbox = {
-                    x: minX,
-                    y: maxY,
-                    width: maxX - minX,
-                    height: maxY - minY
-                };
-
-                // 겹치는 바운딩 박스가 있는지 확인합니다.
-                let overlapIndex = bboxes.findIndex(b =>
-                    !(bbox.x > b.x + b.width ||
-                        bbox.x + bbox.width < b.x ||
-                        bbox.y > b.y + b.height ||
-                        bbox.y + bbox.height < b.y)
-                );
-
-                if (overlapIndex !== -1) {
-                    // 겹치는 바운딩 박스가 있으면 패쓰 데이터를 합칩니다.
-                    paths[overlapIndex] += ' ' + individualPathData;
-                } else {
-                    // 겹치는 바운딩 박스가 없으면 새로운 패쓰 데이터를 추가합니다.
-                    paths.push(individualPathData);
-                    bboxes.push(bbox);
-                }
-            }
-
-            return paths;
-        }
-
-        opentype.load('https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf', function (err, font) {
-            if (err) {
-                console.error('Font could not be loaded: ' + err);
-            } else {
-                const text = 'Hello, World!';
-                const animationDuration = 0.65;  // 애니메이션 재생 속도를 조정하는 변수입니다.
-
-                // 텍스트의 패쓰 정보를 얻습니다.
-                let fontSize = 72;
-                let textHeight = fontSize * (font.ascender - font.descender) / font.unitsPerEm;
-                let padding = fontSize * 0.25;
-                const baseline = fontSize * 1.2;  // 기준선 위치를 조정합니다.
-                let textWidth = font.getAdvanceWidth(text, fontSize);  // 'W' 문자의 너비를 계산합니다.
-
-                // SVG 요소를 생성합니다.
-                let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('width', `${textWidth + padding}`);
-                svg.setAttribute('height', `${textHeight + padding}`);
-                svg.setAttribute('viewBox', `0 ${-(textHeight + padding)} ${textWidth} ${textHeight}`);
-
-                let glyphPath = font.getPath(text, 0, baseline, fontSize);
-                let pathData = glyphPath.toPathData();
-
-                // 'M으로 시작, Z로 끝나는 패턴'을 모두 추출합니다.
-                let regex = /M.*?Z/g;
-                let matches = pathData.match(regex);
-
-                let combinedPaths = combineOverlappingPaths(matches);
-
-                combinedPaths.forEach((pathData, i) => {
-                    let svgPathStroke = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    svgPathStroke.setAttribute('d', pathData);
-                    svgPathStroke.setAttribute('fill', 'none');
-                    svgPathStroke.setAttribute('class', 'outline');
-                    svgPathStroke.style.transform = "scaleY(-1)";  // y 좌표를 반전시킵니다.
-
-                    // 패쓰에 애니메이션을 추가합니다.
-                    let length = svgPathStroke.getTotalLength();
-                    svgPathStroke.style.strokeDasharray = length + ' ' + length;
-                    svgPathStroke.style.strokeDashoffset = length;
-                    svgPathStroke.style.animation = `line-anim ${animationDuration}s ${animationDuration * 0.45 * i}s ease forwards`;
-
-                    // 패쓰를 SVG 요소에 추가합니다.
-                    svg.appendChild(svgPathStroke);
-
-                    // 채우기를 위한 패쓰를 생성합니다.
-                    let svgPathFill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    svgPathFill.setAttribute('d', pathData);
-                    svgPathFill.setAttribute('fill', 'none');
-                    svgPathFill.setAttribute('stroke', 'none');
-                    svgPathFill.style.strokeDasharray = length + ' ' + length;
-                    svgPathFill.style.strokeDashoffset = length;
-                    svgPathFill.style.animation = `fill-anim ${animationDuration}s ${animationDuration * 0.45 * i}s forwards`;
-                    svgPathFill.style.transform = "scaleY(-1)";  // y 좌표를 반전시킵니다.
-
-                    // 채우기 패쓰를 SVG 요소에 추가합니다.
-                    svg.appendChild(svgPathFill);
-                });
-
-                // SVG 요소를 문서에 추가합니다.
-                document.body.appendChild(svg);
-            };
-
-        });
+        makeSvgElem("Hello, World!");
     </script>
-
-    <style>
-        svg {
-            background-image: url('tactile_noise.png');
-            background-repeat: repeat;
-        }
-
-        svg path.outline {
-            stroke: white;
-            stroke-width: 1px;
-        }
-
-        @keyframes line-anim {
-            to {
-                stroke-dashoffset: 0;
-            }
-        }
-
-        @keyframes fill-anim {
-            to {
-                fill: whitesmoke;
-            }
-        }
-    </style>
 </body>
 
 </html>

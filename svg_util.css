@@ -1,0 +1,21 @@
+svg {
+    background-image: url('tactile_noise.png');
+    background-repeat: repeat;
+}
+
+svg path.outline {
+    stroke: white;
+    stroke-width: 1px;
+}
+
+@keyframes line-anim {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes fill-anim {
+    to {
+        fill: whitesmoke;
+    }
+}
