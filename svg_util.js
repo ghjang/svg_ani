@@ -1,69 +1,3 @@
-function combineOverlappingPaths(matches) {
-    const paths = [];
-    const bboxes = [];
-
-    for (let i = 0; i < matches.length; i++) {
-        const individualPathData = matches[i];
-
-        const commandPattern = /([MLQZ])((\s*-?\d+\.?\d*)*)/g;
-        let match;
-        const points = [];
-
-        while ((match = commandPattern.exec(individualPathData)) !== null) {
-            const command = match[1];
-            const args = match[2].trim().split(/\s+/).map(Number);
-
-            console.debug(command, args);
-
-            if (command === 'Q') {
-                if (args.length !== 4) {
-                    throw new Error(`'${command}' command must have 4 arguments: ${args}`);
-                }
-                points.push({ x: args[0], y: args[1] });
-                points.push({ x: args[2], y: args[3] });
-            } else if (command === 'M' || command === 'L') {
-                if (args.length !== 2) {
-                    throw new Error(`'${command}' command must have 2 arguments: ${args}`);
-                }
-                points.push({ x: args[0], y: args[1] });
-            }
-        }
-
-        // 바운딩 박스를 계산합니다.
-        const minX = Math.min(...points.map(point => point.x));
-        const maxX = Math.max(...points.map(point => point.x));
-        const minY = Math.min(...points.map(point => point.y));
-        const maxY = Math.max(...points.map(point => point.y));
-
-        const bbox = {
-            x: minX,
-            y: maxY,
-            width: maxX - minX,
-            height: maxY - minY
-        };
-
-        // 겹치는 바운딩 박스가 있는지 확인합니다.
-        const overlapIndex = bboxes.findIndex(b =>
-            !(bbox.x > b.x + b.width ||
-                bbox.x + bbox.width < b.x ||
-                bbox.y > b.y + b.height ||
-                bbox.y + bbox.height < b.y)
-        );
-
-        if (overlapIndex !== -1) {
-            // 겹치는 바운딩 박스가 있으면 패쓰 데이터를 합칩니다.
-            paths[overlapIndex] += ' ' + individualPathData;
-        } else {
-            // 겹치는 바운딩 박스가 없으면 새로운 패쓰 데이터를 추가합니다.
-            paths.push(individualPathData);
-            bboxes.push(bbox);
-        }
-    }
-
-    return paths;
-}
-
-
 function createSvgElement(textWidth, textHeight, padding) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('width', `${textWidth + padding}`);
@@ -115,7 +49,8 @@ function splitPathData(strPathData, charPathCmdCntArr) {
         
         예) 'M 0 0L 10 0L 10 10L 0 10Z' -> ['M 0 0', 'L 10 0', 'L 10 10', 'L 0 10', 'Z']
     */
-    const commandsAndArgs = strPathData.split(/(?=[MLQZ])/);
+    const regex = new RegExp(`(?=[${COMMANDS}])`);
+    const commandsAndArgs = strPathData.split(regex);
 
     let index = 0;
     charPathCmdCntArr.forEach(cmdCnt => {
