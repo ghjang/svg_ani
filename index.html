@@ -18,6 +18,14 @@
             .catch(err => {
                 alert(err);
             });
+
+        makeSvgElem('What a Wonderful World!')
+            .then(svgElem => {
+                document.body.appendChild(svgElem);
+            })
+            .catch(err => {
+                alert(err);
+            });
     </script>
 </body>
 

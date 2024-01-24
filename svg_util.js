@@ -5,11 +5,29 @@ function combineOverlappingPaths(matches) {
     for (let i = 0; i < matches.length; i++) {
         const individualPathData = matches[i];
 
-        // 패쓰 데이터에서 점들을 추출합니다.
-        const points = individualPathData.match(/(?:M|L|Q)\s*(-?\d+\.?\d*)\s*(-?\d+\.?\d*)/g).map(point => {
-            const [x, y] = point.slice(1).split(' ').map(Number);
-            return { x, y };
-        });
+        const commandPattern = /([MLQZ])((\s*-?\d+\.?\d*)*)/g;
+        let match;
+        const points = [];
+
+        while ((match = commandPattern.exec(individualPathData)) !== null) {
+            const command = match[1];
+            const args = match[2].trim().split(/\s+/).map(Number);
+
+            console.debug(command, args);
+
+            if (command === 'Q') {
+                if (args.length !== 4) {
+                    throw new Error(`'${command}' command must have 4 arguments: ${args}`);
+                }
+                points.push({ x: args[0], y: args[1] });
+                points.push({ x: args[2], y: args[3] });
+            } else if (command === 'M' || command === 'L') {
+                if (args.length !== 2) {
+                    throw new Error(`'${command}' command must have 2 arguments: ${args}`);
+                }
+                points.push({ x: args[0], y: args[1] });
+            }
+        }
 
         // 바운딩 박스를 계산합니다.
         const minX = Math.min(...points.map(point => point.x));
