@@ -128,7 +128,7 @@ function splitPathData(strPathData, charPathCmdCntArr) {
 }
 
 export async function makeSvgElementWithTextDrawingAnimation(
-    text = 'Hello, World!',
+    text,
     animationDuration = 0.65,
     fontSize = 72,
     webFontUrl = 'https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf'
@@ -158,8 +158,16 @@ export async function makeSvgElementWithTextDrawingAnimation(
         return matches ? matches.length : 0;
     });
 
+    /*
+        NOTE: '전체 문자열'에 대해서 'getPath'를 호출해서 구한 패쓰 데이터와 '각 문자'에 대해서 'getPath'를
+              호출해서 구한 패쓰 데이터가 전체 문자열에서 구한 패쓰 데이터의 대응 문자 부분과 다르다. 예를 들어,
+              'Hello, World!' 문자열에 대해서 구한 패쓰 데이터는 모든 문자가 최종적으로 화면에 렌더링될때
+              정상적인 베이스라인에 맞춰서 렌더링되지만, 각 문자에 대해서 구한 패쓰 데이터는 그렇지 못하다.
+              그러니까, 'e, o, r' 같은 문자가 각각의 패쓰 데이터를 구해서 곧바로 그리면 잘못된 수직 위치에
+              문자가 렌더링된다. 해서 현재의 구현에서 아래와 같은 방식으로 일단 워크어라운드를 적용했다.
+              폰트와 관련한 '변환'으로 문제를 해결할 수 있을 것 같은데, 그 방법을 찾지 못했다.
+    */
     const charPathDataFromStrPathData = splitPathData(strPathData, charPathCmdCntArr);
-    console.log(charPathDataFromStrPathData);
 
     const svg = createSvgElement(textWidth, textHeight, padding);
     charPathDataFromStrPathData.forEach((pathData, i) => {
