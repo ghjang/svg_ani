@@ -82,7 +82,7 @@ export function
         text,
         animationDuration = 0.65,
         fontSize = 72,
-        webFontUrl = 'https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf'
+        webFontUrl = 'fonts/Open_Sans/static/OpenSans-Regular.ttf'
     ) {
     if (opentype === undefined) {
         console.error('opentype.js가 로드되지 않았습니다.');
