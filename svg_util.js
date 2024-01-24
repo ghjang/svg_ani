@@ -1,23 +1,23 @@
 function combineOverlappingPaths(matches) {
-    let paths = [];
-    let bboxes = [];
+    const paths = [];
+    const bboxes = [];
 
     for (let i = 0; i < matches.length; i++) {
-        let individualPathData = matches[i];
+        const individualPathData = matches[i];
 
         // 패쓰 데이터에서 점들을 추출합니다.
-        let points = individualPathData.match(/(?:M|L|Q)\s*(-?\d+\.?\d*)\s*(-?\d+\.?\d*)/g).map(point => {
-            let [x, y] = point.slice(1).split(' ').map(Number);
+        const points = individualPathData.match(/(?:M|L|Q)\s*(-?\d+\.?\d*)\s*(-?\d+\.?\d*)/g).map(point => {
+            const [x, y] = point.slice(1).split(' ').map(Number);
             return { x, y };
         });
 
         // 바운딩 박스를 계산합니다.
-        let minX = Math.min(...points.map(point => point.x));
-        let maxX = Math.max(...points.map(point => point.x));
-        let minY = Math.min(...points.map(point => point.y));
-        let maxY = Math.max(...points.map(point => point.y));
+        const minX = Math.min(...points.map(point => point.x));
+        const maxX = Math.max(...points.map(point => point.x));
+        const minY = Math.min(...points.map(point => point.y));
+        const maxY = Math.max(...points.map(point => point.y));
 
-        let bbox = {
+        const bbox = {
             x: minX,
             y: maxY,
             width: maxX - minX,
@@ -25,7 +25,7 @@ function combineOverlappingPaths(matches) {
         };
 
         // 겹치는 바운딩 박스가 있는지 확인합니다.
-        let overlapIndex = bboxes.findIndex(b =>
+        const overlapIndex = bboxes.findIndex(b =>
             !(bbox.x > b.x + b.width ||
                 bbox.x + bbox.width < b.x ||
                 bbox.y > b.y + b.height ||
@@ -47,7 +47,7 @@ function combineOverlappingPaths(matches) {
 
 
 function createSvgElement(textWidth, textHeight, padding) {
-    let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('width', `${textWidth + padding}`);
     svg.setAttribute('height', `${textHeight + padding}`);
     svg.setAttribute('viewBox', `0 ${-(textHeight + padding)} ${textWidth} ${textHeight}`);
@@ -55,7 +55,7 @@ function createSvgElement(textWidth, textHeight, padding) {
 }
 
 function createSvgPathElement(pathData) {
-    let svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     svgPath.setAttribute('d', pathData);
     svgPath.setAttribute('fill', 'none');
     svgPath.setAttribute('class', 'outline');
@@ -104,17 +104,17 @@ export function
 
         // 'M으로 시작, Z로 끝나는 패턴'을 모두 추출하고 겹치는 패스를 합친다.
         const regex = /M.*?Z/g;
-        let matches = pathData.match(regex);
-        let combinedPaths = combineOverlappingPaths(matches);
+        const matches = pathData.match(regex);
+        const combinedPaths = combineOverlappingPaths(matches);
 
-        let svg = createSvgElement(textWidth, textHeight, padding);
+        const svg = createSvgElement(textWidth, textHeight, padding);
         combinedPaths.forEach((pathData, i) => {
-            let svgPathStroke = createSvgPathElement(pathData);
-            let length = svgPathStroke.getTotalLength();
+            const svgPathStroke = createSvgPathElement(pathData);
+            const length = svgPathStroke.getTotalLength();
             applyOutlineAnimation(svgPathStroke, length, animationDuration, i);
             svg.appendChild(svgPathStroke);
 
-            let svgPathFill = createSvgPathElement(pathData);
+            const svgPathFill = createSvgPathElement(pathData);
             applyFillAnimation(svgPathFill, length, animationDuration, i);
             svg.appendChild(svgPathFill);
         });
