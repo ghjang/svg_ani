@@ -11,7 +11,13 @@
     <script type="module">
         import { makeSvgElementWithTextDrawingAnimation as makeSvgElem } from './svg_util.js';
 
-        makeSvgElem("Hello, World!");
+        makeSvgElem('Hello, World!')
+            .then(svgElem => {
+                document.body.appendChild(svgElem);
+            })
+            .catch(err => {
+                alert(err);
+            });
     </script>
 </body>
 

@@ -77,48 +77,55 @@ function applyFillAnimation(svgPathFill, length, animationDuration, i) {
 }
 
 
-export function
-    makeSvgElementWithTextDrawingAnimation(
-        text,
-        animationDuration = 0.65,
-        fontSize = 72,
-        webFontUrl = 'fonts/Open_Sans/static/OpenSans-Regular.ttf'
-    ) {
+function loadFont(url) {
+    return new Promise((resolve, reject) => {
+        opentype.load(url, (err, font) => {
+            if (err) reject(err);
+            else resolve(font);
+        });
+    });
+}
+
+export async function makeSvgElementWithTextDrawingAnimation(
+    text = 'Hello, World!',
+    animationDuration = 0.65,
+    fontSize = 72,
+    webFontUrl = 'https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf'
+) {
     if (opentype === undefined) {
-        console.error('opentype.js가 로드되지 않았습니다.');
-        return;
+        throw new Error('opentype.js가 로드되지 않았습니다.');
     }
 
-    opentype.load(webFontUrl, (err, font) => {
-        if (err) {
-            console.error('Font could not be loaded: ' + err);
-            return;
-        }
+    let font;
 
-        const textHeight = fontSize * (font.ascender - font.descender) / font.unitsPerEm;
-        const padding = fontSize * 0.25;
-        const baseline = fontSize * 1.2;
-        const textWidth = font.getAdvanceWidth(text, fontSize);
-        const glyphPath = font.getPath(text, 0, baseline, fontSize);
-        const pathData = glyphPath.toPathData();
+    try {
+        font = await loadFont(webFontUrl);
+    } catch (error) {
+        throw `Font could not be loaded: ${error} (url: ${webFontUrl})`
+    }
 
-        // 'M으로 시작, Z로 끝나는 패턴'을 모두 추출하고 겹치는 패스를 합친다.
-        const regex = /M.*?Z/g;
-        const matches = pathData.match(regex);
-        const combinedPaths = combineOverlappingPaths(matches);
+    const textHeight = fontSize * (font.ascender - font.descender) / font.unitsPerEm;
+    const padding = fontSize * 0.25;
+    const baseline = fontSize * 1.2;
+    const textWidth = font.getAdvanceWidth(text, fontSize);
+    const glyphPath = font.getPath(text, 0, baseline, fontSize);
+    const pathData = glyphPath.toPathData();
 
-        const svg = createSvgElement(textWidth, textHeight, padding);
-        combinedPaths.forEach((pathData, i) => {
-            const svgPathStroke = createSvgPathElement(pathData);
-            const length = svgPathStroke.getTotalLength();
-            applyOutlineAnimation(svgPathStroke, length, animationDuration, i);
-            svg.appendChild(svgPathStroke);
+    const regex = /M.*?Z/g;
+    const matches = pathData.match(regex);
+    const combinedPaths = combineOverlappingPaths(matches);
 
-            const svgPathFill = createSvgPathElement(pathData);
-            applyFillAnimation(svgPathFill, length, animationDuration, i);
-            svg.appendChild(svgPathFill);
-        });
+    const svg = createSvgElement(textWidth, textHeight, padding);
+    combinedPaths.forEach((pathData, i) => {
+        const svgPathStroke = createSvgPathElement(pathData);
+        const length = svgPathStroke.getTotalLength();
+        applyOutlineAnimation(svgPathStroke, length, animationDuration, i);
+        svg.appendChild(svgPathStroke);
 
-        document.body.appendChild(svg);
+        const svgPathFill = createSvgPathElement(pathData);
+        applyFillAnimation(svgPathFill, length, animationDuration, i);
+        svg.appendChild(svgPathFill);
     });
+
+    return svg;
 }
