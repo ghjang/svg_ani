@@ -81,17 +81,17 @@ function createSvgPathElement(pathData) {
     return svgPath;
 }
 
-function applyOutlineAnimation(svgPath, length, animationDuration, i) {
+function applyOutlineAnimation(svgPath, length, animationDuration, nthElem) {
     svgPath.style.strokeDasharray = length + ' ' + length;
     svgPath.style.strokeDashoffset = length;
-    svgPath.style.animation = `line-anim ${animationDuration}s ${animationDuration * 0.45 * i}s ease forwards`;
+    svgPath.style.animation = `line-anim ${animationDuration}s ${animationDuration * 0.45 * nthElem}s ease forwards`;
 }
 
-function applyFillAnimation(svgPathFill, length, animationDuration, i) {
+function applyFillAnimation(svgPathFill, length, animationDuration, nthElem) {
     svgPathFill.setAttribute('stroke', 'none');
     svgPathFill.style.strokeDasharray = length + ' ' + length;
     svgPathFill.style.strokeDashoffset = length;
-    svgPathFill.style.animation = `fill-anim ${animationDuration}s ${animationDuration * 0.45 * i}s forwards`;
+    svgPathFill.style.animation = `fill-anim ${animationDuration}s ${animationDuration * 0.45 * nthElem}s forwards`;
 }
 
 
@@ -126,6 +126,19 @@ function splitPathData(strPathData, charPathCmdCntArr) {
 
     return charPathDataFromStrPathData;
 }
+
+
+export function appendAnimationFromPathData(svg, pathData, animationDuration, nthElem) {
+    const svgPathStroke = createSvgPathElement(pathData);
+    const length = svgPathStroke.getTotalLength();
+    applyOutlineAnimation(svgPathStroke, length, animationDuration, nthElem);
+    svg.appendChild(svgPathStroke);
+
+    const svgPathFill = createSvgPathElement(pathData);
+    applyFillAnimation(svgPathFill, length, animationDuration, nthElem);
+    svg.appendChild(svgPathFill);
+}
+
 
 export async function makeSvgElementWithTextDrawingAnimation(
     text,
@@ -170,15 +183,8 @@ export async function makeSvgElementWithTextDrawingAnimation(
     const charPathDataFromStrPathData = splitPathData(strPathData, charPathCmdCntArr);
 
     const svg = createSvgElement(textWidth, textHeight, padding);
-    charPathDataFromStrPathData.forEach((pathData, i) => {
-        const svgPathStroke = createSvgPathElement(pathData);
-        const length = svgPathStroke.getTotalLength();
-        applyOutlineAnimation(svgPathStroke, length, animationDuration, i);
-        svg.appendChild(svgPathStroke);
-
-        const svgPathFill = createSvgPathElement(pathData);
-        applyFillAnimation(svgPathFill, length, animationDuration, i);
-        svg.appendChild(svgPathFill);
+    charPathDataFromStrPathData.forEach((pathData, n) => {
+        appendAnimationFromPathData(svg, pathData, animationDuration, n);
     });
 
     return svg;
