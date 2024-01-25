@@ -31,6 +31,11 @@ function applyFillAnimation(svgPathFill, length, animationDuration, nthElem) {
 
 function loadFont(url) {
     return new Promise((resolve, reject) => {
+        if (opentype === undefined) {
+            reject(new Error('opentype.js is not loaded.'));
+            return;
+        }
+
         opentype.load(url, (err, font) => {
             if (err) reject(err);
             else resolve(font);
@@ -81,10 +86,6 @@ export async function makeSvgElementWithTextDrawingAnimation(
     fontSize = 72,
     webFontUrl = 'https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf'
 ) {
-    if (opentype === undefined) {
-        throw new Error('opentype.js is not loaded.');
-    }
-
     let font;
 
     try {
