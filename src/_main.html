@@ -2,14 +2,14 @@
 <html>
 
 <head>
-    <link rel="stylesheet" href="svg_util.css">
+    <link rel="stylesheet" href="./css/svg_util.css">
     <script src="https://opentype.js.org/dist/opentype.js"></script>
 </head>
 
 <body>
     <script type="module">
         // ES6 모듈 import
-        import { makeSvgElementWithTextDrawingAnimation as makeSvgElem } from './svg_util.js';
+        import { makeSvgElementWithTextDrawingAnimation as makeSvgElem } from './modules/svg_util.js';
 
         // 비동기 함수 정의. 텍스트를 받아 SVG 요소를 만들고 문서에 추가함.
         async function appendSvgElem(text) {
