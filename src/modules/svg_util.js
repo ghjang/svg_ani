@@ -90,8 +90,6 @@ function splitPathData(strPathData, charPathCmdCntArr) {
         start = end;
     }
 
-    console.log(charPathDataFromStrPathData);
-
     return charPathDataFromStrPathData;
 }
 
