@@ -32,7 +32,7 @@ function applyFillAnimation(svgPathFill, length, animationDuration, nthElem) {
 class FontLoader {
     static fontCache = new Map();
 
-    static async loadFont(url) {
+    static async load(url) {
         if (FontLoader.fontCache.has(url)) {
             return FontLoader.fontCache.get(url);
         }
@@ -96,7 +96,7 @@ export async function makeSvgElementWithTextDrawingAnimation(
     let font;
 
     try {
-        font = await FontLoader.loadFont(webFontUrl);
+        font = await FontLoader.load(webFontUrl);
     } catch (error) {
         throw `Font could not be loaded: ${error} (url: ${webFontUrl})`
     }
