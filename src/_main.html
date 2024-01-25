@@ -15,7 +15,9 @@
         async function appendSvgElem(text) {
             try {
                 const svgElem = await makeSvgElem(text);
-                document.body.appendChild(svgElem);
+                const divElem = document.createElement('div');
+                divElem.appendChild(svgElem);
+                document.body.appendChild(divElem);
             } catch (err) {
                 alert(err);
             }
