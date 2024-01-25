@@ -50,6 +50,13 @@ class FontLoader {
 }
 
 
+/**
+ * '전체 문자열' 패쓰 데이터에서 '각 문자' 패쓰 데이터를 구한다.
+ * 
+ * @param {*} strPathData '전체 문자열' 패쓰 데이터 문자열
+ * @param {*} charPathCmdCntArr '각 문자' 패쓰 데이터의 명령어 개수 배열
+ * @returns '각 문자' 패쓰 데이터 문자열 배열
+ */
 function splitPathData(strPathData, charPathCmdCntArr) {
     const COMMANDS = 'MLQZ';
     const charPathDataFromStrPathData = [];
