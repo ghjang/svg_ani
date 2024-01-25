@@ -29,19 +29,26 @@ function applyFillAnimation(svgPathFill, length, animationDuration, nthElem) {
 }
 
 
-function loadFont(url) {
-    return new Promise((resolve, reject) => {
-        if (opentype === undefined) {
-            reject(new Error('opentype.js is not loaded.'));
-            return;
+class FontLoader {
+    static fontCache = new Map();
+
+    static async loadFont(url) {
+        if (FontLoader.fontCache.has(url)) {
+            return FontLoader.fontCache.get(url);
         }
 
-        opentype.load(url, (err, font) => {
-            if (err) reject(err);
-            else resolve(font);
+        const font = await new Promise((resolve, reject) => {
+            opentype.load(url, (err, font) => {
+                if (err) reject(err);
+                else resolve(font);
+            });
         });
-    });
+
+        FontLoader.fontCache.set(url, font);
+        return font;
+    }
 }
+
 
 function splitPathData(strPathData, charPathCmdCntArr) {
     const COMMANDS = 'MLQZ';
@@ -89,7 +96,7 @@ export async function makeSvgElementWithTextDrawingAnimation(
     let font;
 
     try {
-        font = await loadFont(webFontUrl);
+        font = await FontLoader.loadFont(webFontUrl);
     } catch (error) {
         throw `Font could not be loaded: ${error} (url: ${webFontUrl})`
     }
