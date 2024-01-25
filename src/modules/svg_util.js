@@ -50,6 +50,9 @@ class FontLoader {
 }
 
 
+const g_targetPathCmds = 'MLQZ';
+
+
 /**
  * '전체 문자열' 패쓰 데이터에서 '각 문자' 패쓰 데이터를 구한다.
  * 
@@ -58,25 +61,36 @@ class FontLoader {
  * @returns '각 문자' 패쓰 데이터 문자열 배열
  */
 function splitPathData(strPathData, charPathCmdCntArr) {
-    const COMMANDS = 'MLQZ';
     const charPathDataFromStrPathData = [];
 
-    /*
-        패쓰 데이터 문자열에서 각 '명령어와 인자'를 단위로 분리한다.
-        명령어는 1개의 문자이고, 인자는 0개 이상인 것을 가정한다.
-        또, 명령어 앞의 인자에 인자가 있을 경우 그 명령어 인자 사이에 공백이 없다고 가정한다.
-        
-        예) 'M 0 0L 10 0L 10 10L 0 10Z' -> ['M 0 0', 'L 10 0', 'L 10 10', 'L 0 10', 'Z']
-    */
-    const regex = new RegExp(`(?=[${COMMANDS}])`);
-    const commandsAndArgs = strPathData.split(regex);
+    let start = 0;  // '각 문자' 패쓰 데이터의 시작 인덱스
+    let end;        // '각 문자' 패쓰 데이터의 끝 인덱스 + 1
 
-    let index = 0;
-    charPathCmdCntArr.forEach(cmdCnt => {
-        // 각 문자에 대한 패쓰 데이터를 저장
-        charPathDataFromStrPathData.push(commandsAndArgs.slice(index, index + cmdCnt).join(''));
-        index += cmdCnt;
-    });
+    for (let i = 0; i < charPathCmdCntArr.length; ++i) {
+        end = start;
+        
+        let cmdCnt = charPathCmdCntArr[i];
+        while (cmdCnt > 0 && end < strPathData.length) {
+            // 'SVG 패쓰 명령어' 파트 스킵
+            if (g_targetPathCmds.indexOf(strPathData[end]) !== -1) {
+                --cmdCnt;
+                ++end; // '명령어'는 '1개 문자'
+            }
+
+            // 'SVG 패쓰 명령어 인자' 파트 스킵
+            while (end < strPathData.length
+                    && g_targetPathCmds.indexOf(strPathData[end]) === -1) {
+                ++end;
+            }
+        }
+
+        const charPathData = strPathData.slice(start, end);
+        charPathDataFromStrPathData.push(charPathData);
+
+        start = end;
+    }
+
+    console.log(charPathDataFromStrPathData);
 
     return charPathDataFromStrPathData;
 }
@@ -116,10 +130,33 @@ export async function makeSvgElementWithTextDrawingAnimation(
     const strPathData = glyphPath.toPathData();
     const charPathDataArr = text.split('').map(c => font.getPath(`${c}`, 0, baseline, fontSize).toPathData());
 
+    // 전체 문자열에 대한 패스 데이터에서 명령어의 개수를 카운팅
+    let strPathCmdCount = 0;
+    for (let i = 0; i < strPathData.length; ++i) {
+        if (g_targetPathCmds.indexOf(strPathData[i]) !== -1) {
+            ++strPathCmdCount;
+        }
+    }
+
+    // 각 문자에 대한 패스 데이터에서 명령어의 개수를 카운팅
     const charPathCmdCntArr = charPathDataArr.map(data => {
-        const matches = data.match(/[MLQZ]/g);
-        return matches ? matches.length : 0;
+        let count = 0;
+        for (let i = 0; i < data.length; ++i) {
+            if (g_targetPathCmds.indexOf(data[i]) !== -1) {
+                ++count;
+            }
+        }
+        return count;
     });
+
+    // 전체 문자열에 대한 패스 데이터의 명령어 개수와 각 문자에 대한 패스 데이터의 명령어 개수 합이 같은지 확인
+    const totalCharPathCmdCount = charPathCmdCntArr.reduce((a, b) => a + b, 0);
+    if (strPathCmdCount !== totalCharPathCmdCount) {
+        throw new Error(
+            'The command count of the whole string path data ' +
+            'does not match the total command count of each character path data.'
+        );
+    }
 
     /*
         NOTE: '전체 문자열'에 대해서 'getPath'를 호출해서 구한 패쓰 데이터와 '각 문자'에 대해서 'getPath'를
