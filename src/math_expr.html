@@ -5,7 +5,7 @@
     <title>Quadratic Equation Steps</title>
 
     <style>
-        #container {
+        #mathExprContainer {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -26,56 +26,87 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 
     <script>
-        const ANIMATION_SPEED = '1s';
-        const DELAY_MULTIPLIER = 400;
-        const EXTRA_DELAY = 1300;
-        const RESOURCE_URL = '/resources/latex/quadratic.yml';
+        class EquationRenderer {
+            constructor(containerId) {
+                this.containerId = containerId;
+                this.isRendering = false;
+                this.animationSpeed = 1000;
+                this.delayMultiplier = 400;
+                this.extraDelay = 1300;
+            }
 
-        function applyAnimation(containerId) {
-            const gElements = document.querySelectorAll(
-                `#${containerId} > svg use, ` +
-                `#${containerId} > svg rect`
-            );
-            gElements.forEach((element, index) => {
-                element.style.transition = `opacity ${ANIMATION_SPEED}`;
-                element.style.opacity = 0;
-                setTimeout(() => {
-                    element.style.opacity = 1;
-                }, index * DELAY_MULTIPLIER);
-            });
-        }
+            #applyAnimation(svg) {
+                const gElements = svg.querySelectorAll('use, rect');
+                gElements.forEach((element, index) => {
+                    element.style.transition = `opacity ${this.animationSpeed}ms`;
+                    element.style.opacity = 0;
+                    setTimeout(
+                        () => element.style.opacity = 1,
+                        index * this.delayMultiplier
+                    );
+                });
+            }
 
-        async function renderEquations(equations, containerId) {
-            const container = document.getElementById(containerId);
-            for (let i = 0; i < equations.length; i++) {
-                const eq = equations[i];
-                const svg = await MathJax.tex2svgPromise(eq);
-                container.appendChild(svg);
-                applyAnimation(containerId);
+            async #fetchEquations(resourceUrl) {
+                const response = await fetch(resourceUrl);
+                const yamlText = await response.text();
+                const data = jsyaml.load(yamlText);
+                return data.steps;
+            }
 
-                const renderTargetElemCnt = svg.querySelectorAll('use, rect').length;
-                const timeout = (renderTargetElemCnt * DELAY_MULTIPLIER) + EXTRA_DELAY;
-                await new Promise(resolve => setTimeout(resolve, timeout));
+            async #renderEquations(equations) {
+                const container = document.getElementById(this.containerId);
+                for (let i = 0; i < equations.length; i++) {
+                    const eq = equations[i];
+                    const svg = await MathJax.tex2svgPromise(eq);
+                    this.#applyAnimation(svg);
+                    container.appendChild(svg);
 
-                if (i < equations.length - 1) {
-                    container.removeChild(svg);
+                    const renderTargetElemCnt = svg.querySelectorAll('use, rect').length;
+                    const timeout = (renderTargetElemCnt * this.delayMultiplier) + this.extraDelay;
+                    await new Promise(resolve => setTimeout(resolve, timeout));
+
+                    if (i < equations.length - 1) {
+                        container.removeChild(svg);
+                    }
+                }
+            }
+
+            async init() {
+                await MathJax.startup.promise;
+            }
+
+            async render(source) {
+                if (this.isRendering) {
+                    throw new Error('Already rendering. Please wait until the current rendering is finished.');
+                }
+
+                this.isRendering = true;
+
+                try {
+                    let equations = source;
+
+                    if (typeof source === 'string') {
+                        equations = await this.#fetchEquations(source);
+                    }
+
+                    await this.#renderEquations(equations);
+                } finally {
+                    this.isRendering = false;
                 }
             }
         }
 
         window.addEventListener('load', async () => {
-            const response = await fetch(RESOURCE_URL);
-            const yamlText = await response.text();
-            const data = jsyaml.load(yamlText);
-            const equations = data.steps;
-            await MathJax.startup.promise;
-            await renderEquations(equations, 'container');
+            const renderer = new EquationRenderer('mathExprContainer');
+            await renderer.init();
+            await renderer.render('/resources/latex/quadratic.yml');
         });
     </script>
 </head>
 
 <body>
-    <div id="container"></div>
+    <div id="mathExprContainer"></div>
 </body>
 
 </html>
