@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Quadratic Equation Steps</title>
+
+    <style>
+        #container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@3/dist/js-yaml.min.js"></script>
+
+    <script>
+        window.MathJax = {
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <script>
+        const ANIMATION_SPEED = '1s';
+        const DELAY_MULTIPLIER = 400;
+        const EXTRA_DELAY = 1300;
+        const RESOURCE_URL = '/resources/latex/quadratic.yml';
+
+        function applyAnimation(containerId) {
+            const gElements = document.querySelectorAll(
+                `#${containerId} > svg use, ` +
+                `#${containerId} > svg rect`
+            );
+            gElements.forEach((element, index) => {
+                element.style.transition = `opacity ${ANIMATION_SPEED}`;
+                element.style.opacity = 0;
+                setTimeout(() => {
+                    element.style.opacity = 1;
+                }, index * DELAY_MULTIPLIER);
+            });
+        }
+
+        async function renderEquations(equations, containerId) {
+            const container = document.getElementById(containerId);
+            for (let i = 0; i < equations.length; i++) {
+                const eq = equations[i];
+                const svg = await MathJax.tex2svgPromise(eq);
+                container.appendChild(svg);
+                applyAnimation(containerId);
+
+                const renderTargetElemCnt = svg.querySelectorAll('use, rect').length;
+                const timeout = (renderTargetElemCnt * DELAY_MULTIPLIER) + EXTRA_DELAY;
+                await new Promise(resolve => setTimeout(resolve, timeout));
+
+                if (i < equations.length - 1) {
+                    container.removeChild(svg);
+                }
+            }
+        }
+
+        window.addEventListener('load', async () => {
+            const response = await fetch(RESOURCE_URL);
+            const yamlText = await response.text();
+            const data = jsyaml.load(yamlText);
+            const equations = data.steps;
+            await MathJax.startup.promise;
+            await renderEquations(equations, 'container');
+        });
+    </script>
+</head>
+
+<body>
+    <div id="container"></div>
+</body>
+
+</html>
