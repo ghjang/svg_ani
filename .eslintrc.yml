@@ -20,5 +20,5 @@ rules:
   # 재할당되지 않는 모든 let 변수를 오류로 표시
   prefer-const: 'error'
 
-  # 사용되지 않는 변수를 오류로 표시
-  no-unused-vars: 'error'
+  # 사용되지 않는 변수를 오류로 표시. 단, '_'로 시작하는 변수는 무시
+  no-unused-vars: ["error", { "argsIgnorePattern": "^_" }]

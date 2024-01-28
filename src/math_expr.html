@@ -25,82 +25,12 @@
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 
-    <script>
-        class EquationRenderer {
-            constructor(containerId) {
-                this.containerId = containerId;
-                this.isRendering = false;
-                this.animationSpeed = 1000;
-                this.delayMultiplier = 400;
-                this.extraDelay = 1300;
-            }
-
-            #applyAnimation(svg) {
-                const gElements = svg.querySelectorAll('use, rect');
-                gElements.forEach((element, index) => {
-                    element.style.transition = `opacity ${this.animationSpeed}ms`;
-                    element.style.opacity = 0;
-                    setTimeout(
-                        () => element.style.opacity = 1,
-                        index * this.delayMultiplier
-                    );
-                });
-            }
-
-            async #fetchEquations(resourceUrl) {
-                const response = await fetch(resourceUrl);
-                const yamlText = await response.text();
-                const data = jsyaml.load(yamlText);
-                return data.steps;
-            }
-
-            async #renderEquations(equations) {
-                const container = document.getElementById(this.containerId);
-                for (let i = 0; i < equations.length; i++) {
-                    const eq = equations[i];
-                    const svg = await MathJax.tex2svgPromise(eq);
-                    this.#applyAnimation(svg);
-                    container.appendChild(svg);
-
-                    const renderTargetElemCnt = svg.querySelectorAll('use, rect').length;
-                    const timeout = (renderTargetElemCnt * this.delayMultiplier) + this.extraDelay;
-                    await new Promise(resolve => setTimeout(resolve, timeout));
-
-                    if (i < equations.length - 1) {
-                        container.removeChild(svg);
-                    }
-                }
-            }
-
-            async init() {
-                await MathJax.startup.promise;
-            }
-
-            async render(source) {
-                if (this.isRendering) {
-                    throw new Error('Already rendering. Please wait until the current rendering is finished.');
-                }
-
-                this.isRendering = true;
-
-                try {
-                    let equations = source;
-
-                    if (typeof source === 'string') {
-                        equations = await this.#fetchEquations(source);
-                    }
-
-                    await this.#renderEquations(equations);
-                } finally {
-                    this.isRendering = false;
-                }
-            }
-        }
+    <script type="module">
+        import ExprAnimator from './modules/expr_animator.js';
 
         window.addEventListener('load', async () => {
-            const renderer = new EquationRenderer('mathExprContainer');
-            await renderer.init();
-            await renderer.render('/resources/latex/quadratic.yml');
+            const animator = await ExprAnimator.create('mathExprContainer');
+            await animator.run('/resources/latex/quadratic.yml');
         });
     </script>
 </head>
