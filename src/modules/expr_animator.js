@@ -1,4 +1,4 @@
-import MathJaxAnimationStrategy from './animation_strategy/MathJaxAnimationStrategy.js';
+import MathJaxAnimationStrategy from './strategy/animation/MathJax.js';
 
 
 const privateConstructor = Symbol('privateConstructor');
