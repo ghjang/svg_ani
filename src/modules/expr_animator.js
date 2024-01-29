@@ -1,11 +1,13 @@
 import MathJaxAnimationStrategy from './strategy/animation/MathJax.js';
+import { Triggers } from './strategy/animation/transition/Trigger.js';
 
 
 const privateConstructor = Symbol('privateConstructor');
 
 
 export default class ExprAnimator {
-    #renderingStrategy;
+    #animationStrategy;
+    #trigger;
 
     constructor(symbol) {
         if (symbol !== privateConstructor) {
@@ -13,30 +15,32 @@ export default class ExprAnimator {
         }
     }
 
-    static async create(containerId) {
+    static async create(containerId, trigger = Triggers.default) {
         const obj = new ExprAnimator(privateConstructor);
 
-        obj.#renderingStrategy = new MathJaxAnimationStrategy(containerId);
-        await obj.#renderingStrategy.init();
+        obj.#animationStrategy = new MathJaxAnimationStrategy(containerId);
+        await obj.#animationStrategy.init();
+
+        obj.#trigger = trigger;
 
         return obj;
     }
 
     async run(source) {
-        if (this.#renderingStrategy.isRendering) {
-            throw new Error('Already rendering. Please wait until the current rendering is finished.');
+        if (this.#animationStrategy.isAnimating) {
+            throw new Error('Already animating. Please wait until the current animation is finished.');
         }
 
-        this.#renderingStrategy.isRendering = true;
+        this.#animationStrategy.isAnimating = true;
 
         try {
             let exprs = source;
             if (typeof source === 'string') {
                 exprs = await this.#fetchExpr(source);
             }
-            await this.#renderingStrategy.render(exprs);
+            await this.#animationStrategy.animate(exprs, this.#trigger);
         } finally {
-            this.#renderingStrategy.isRendering = false;
+            this.#animationStrategy.isAnimating = false;
         }
     }
 

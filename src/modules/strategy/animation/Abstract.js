@@ -4,14 +4,14 @@ export default class AbstractAnimationStrategy {
             throw new TypeError("Cannot construct Abstract instances directly");
         }
         this.containerId = containerId;
-        this.isRendering = false;
+        this.isAnimating = false;
     }
 
     async init() {
         throw new Error("Must override method");
     }
 
-    async render(_exprs) {
+    async animate(_exprs) {
         throw new Error("Must override method");
     }
 }

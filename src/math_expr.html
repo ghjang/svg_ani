@@ -27,9 +27,13 @@
 
     <script type="module">
         import ExprAnimator from './modules/expr_animator.js';
+        import { Triggers } from './modules/strategy/animation/transition/Trigger.js'
 
         window.addEventListener('load', async () => {
-            const animator = await ExprAnimator.create('mathExprContainer');
+            //const animator = await ExprAnimator.create('mathExprContainer');
+            //const animator = await ExprAnimator.create('mathExprContainer', Triggers.default);
+            const animator = await ExprAnimator.create('mathExprContainer', Triggers.forwardOnly);
+
             await animator.run('/resources/latex/quadratic.yml');
         });
     </script>
