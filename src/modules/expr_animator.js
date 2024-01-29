@@ -1,5 +1,6 @@
 import MathJaxAnimationStrategy from './strategy/animation/MathJax.js';
 import { Triggers } from './strategy/animation/transition/Trigger.js';
+import OpacityTransition from './strategy/animation/transition/Opacity.js';
 
 
 const privateConstructor = Symbol('privateConstructor');
@@ -8,6 +9,7 @@ const privateConstructor = Symbol('privateConstructor');
 export default class ExprAnimator {
     #animationStrategy;
     #trigger;
+    #transition;
 
     constructor(symbol) {
         if (symbol !== privateConstructor) {
@@ -15,13 +17,14 @@ export default class ExprAnimator {
         }
     }
 
-    static async create(containerId, trigger = Triggers.default) {
+    static async create(containerId, trigger = Triggers.default, transition = new OpacityTransition()) {
         const obj = new ExprAnimator(privateConstructor);
 
         obj.#animationStrategy = new MathJaxAnimationStrategy(containerId);
         await obj.#animationStrategy.init();
 
         obj.#trigger = trigger;
+        obj.#transition = transition;
 
         return obj;
     }
@@ -38,7 +41,7 @@ export default class ExprAnimator {
             if (typeof source === 'string') {
                 exprs = await this.#fetchExpr(source);
             }
-            await this.#animationStrategy.animate(exprs, this.#trigger);
+            await this.#animationStrategy.animate(exprs, this.#trigger, this.#transition);
         } finally {
             this.#animationStrategy.isAnimating = false;
         }

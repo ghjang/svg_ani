@@ -1,6 +1,7 @@
 import AbstractAnimationStrategy from './Abstract.js';
 import MathJaxSvgExpressions from '../../iterator/math_expression/MathJax.js';
 import { Triggers } from './transition/Trigger.js';
+import OpacityTransition from './transition/Opacity.js';
 
 
 export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy {
@@ -13,20 +14,21 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         await MathJax.startup.promise;
     }
 
-    #initTransition(gElements) {
+    #initTransition(gElements, transition) {
         for (let i = 0; i < gElements.length; ++i) {
             const element = gElements[i];
-            element.style.opacity = 0;
+            transition.setStartState(element);
         }
     }
 
-    async #applyTransition(gElements, colIndex, trigger) {
+    async #applyTransition(gElements, colIndex, trigger, transition) {
         if (colIndex === 0) {
             const firstElement = gElements[0];
             const firstElementDelay = this.elementAnimationDuration * 0.1;
-            firstElement.style.transition = `opacity ${this.elementAnimationDuration}ms`;
+            transition.setTargetTransition(firstElement, this.elementAnimationDuration);
             return new Promise(resolve => {
                 trigger(() => {
+                    transition.setEndState(firstElement);
                     firstElement.style.opacity = 1;
                     resolve();
                 }, firstElementDelay, 0);
@@ -35,11 +37,11 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
 
         const otherElementsDelay = this.elementAnimationDuration * 0.9;
         const element = gElements[colIndex];
-        element.style.transition = `opacity ${this.elementAnimationDuration}ms`;
+        transition.setTargetTransition(element, this.elementAnimationDuration);
         return new Promise(resolve => {
             gElements[colIndex - 1].addEventListener('transitionstart', () => {
                 trigger(() => {
-                    element.style.opacity = 1;
+                    transition.setEndState(element);
                     resolve();
                 }, otherElementsDelay, colIndex);
             }, { once: true });
@@ -52,7 +54,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         });
     }
 
-    async animate(exprs, trigger = Triggers.default) {
+    async animate(exprs, trigger = Triggers.default, transition = new OpacityTransition()) {
         const container = document.getElementById(this.containerId);
 
         const mathJaxExprs = new MathJaxSvgExpressions(exprs);
@@ -69,7 +71,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             const gElements = value.gElements;
 
             if (value.startOfRow) {
-                this.#initTransition(gElements);
+                this.#initTransition(gElements, transition);
             }
 
             container.appendChild(svg);
@@ -89,7 +91,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                     break;
                 }
 
-                await this.#applyTransition(gElements, value.colIndex, trigger);
+                await this.#applyTransition(gElements, value.colIndex, trigger, transition);
             }
         }
     }
