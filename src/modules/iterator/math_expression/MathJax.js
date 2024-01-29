@@ -8,7 +8,8 @@ export default class MathJaxSvgExpressions {
     }
 
     async *[Symbol.asyncIterator]() {
-        for (let i = 0; i < this.latexExpressions.length; ++i) {
+        let verticalIncrementVal = 1;
+        for (let i = 0; i < this.latexExpressions.length; i += verticalIncrementVal) {
             const expr = this.latexExpressions[i];
             const svgElement = await MathJax.tex2svgPromise(expr);
 
@@ -25,17 +26,35 @@ export default class MathJaxSvgExpressions {
                 startOfRow: true
             };
 
-            for (let j = 0; j < gElements.length; ++j) {
-                yield {
-                    rowIndex: i,
-                    colIndex: j
-                };
+            let prevHorizontalDirection = "right";
+            let curHorizontalDirection = prevHorizontalDirection;
+            let horizontalIncrementVal = 1;
+            for (let j = -1; j >= -2 && j < gElements.length; j += horizontalIncrementVal) {
+                if (prevHorizontalDirection !== curHorizontalDirection) {
+                    horizontalIncrementVal = -horizontalIncrementVal;
+                    j += horizontalIncrementVal;
+                    prevHorizontalDirection = curHorizontalDirection;
+                    continue;
+                }
+
+                const elemInfo = { rowIndex: i, colIndex: j + 1};
+                console.log(`i: ${i}, j: ${j}`);
+                curHorizontalDirection = yield elemInfo;
             }
 
-            yield {
-                rowIndex: i,
-                endOfRow: true
-            };
+            console.log(`i: ${i}`);
+
+            if (horizontalIncrementVal === 1) {
+                yield {
+                    rowIndex: i,
+                    endOfRow: true
+                };
+            } else if (horizontalIncrementVal === -1) {
+                yield {
+                    rowIndex: i,
+                    startOfRow: true
+                };
+            }
         }
     }
 }

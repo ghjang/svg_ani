@@ -22,29 +22,20 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
     }
 
     async #applyTransition(gElements, colIndex, trigger, transition) {
-        if (colIndex === 0) {
-            const firstElement = gElements[0];
-            const firstElementDelay = this.elementAnimationDuration * 0.1;
-            transition.setTargetTransition(firstElement, this.elementAnimationDuration);
-            return new Promise(resolve => {
-                trigger(() => {
-                    transition.setEndState(firstElement);
-                    firstElement.style.opacity = 1;
-                    resolve();
-                }, firstElementDelay, 0);
-            });
+        if (colIndex == null || colIndex < 0 || colIndex >= gElements.length) {
+            return new Promise(resolve => resolve());
         }
 
-        const otherElementsDelay = this.elementAnimationDuration * 0.9;
+        const delay = (colIndex === 0) ? this.elementAnimationDuration * 0.1 : this.elementAnimationDuration * 0.9;
+
         const element = gElements[colIndex];
         transition.setTargetTransition(element, this.elementAnimationDuration);
+
         return new Promise(resolve => {
-            gElements[colIndex - 1].addEventListener('transitionstart', () => {
-                trigger(() => {
-                    transition.setEndState(element);
-                    resolve();
-                }, otherElementsDelay, colIndex);
-            }, { once: true });
+            trigger((action) => {
+                transition.setEndState(element, action.direction);
+                resolve(action);
+            }, delay, colIndex);
         });
     }
 
@@ -77,7 +68,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             container.appendChild(svg);
 
             while (true) {
-                const { value, done } = await iterator.next();
+                const { value, done } = await iterator.next(transition.nextDirection);
 
                 if (done) {
                     break;
@@ -90,8 +81,11 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                     }
                     break;
                 }
-
-                await this.#applyTransition(gElements, value.colIndex, trigger, transition);
+                
+                const action = await this.#applyTransition(gElements, value.colIndex, trigger, transition);
+                if (action && typeof action.do === 'function') {
+                    action.do(gElements, value.rowIndex, value.colIndex);
+                }
             }
         }
     }
