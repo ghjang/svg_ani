@@ -1,4 +1,4 @@
-export default class MathJaxSvgExpressions {
+class MathJaxSvgExpressions {
     constructor(latexExpressions) {
         this.latexExpressions = latexExpressions;
     }
@@ -57,4 +57,9 @@ export default class MathJaxSvgExpressions {
             }
         }
     }
+}
+
+
+export default function createMathJaxSvgExpressions(latexExpressions) {
+    return new MathJaxSvgExpressions(latexExpressions);
 }

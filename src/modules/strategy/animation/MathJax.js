@@ -1,5 +1,5 @@
 import AbstractAnimationStrategy from './Abstract.js';
-import MathJaxSvgExpressions from '../../iterator/math_expression/MathJax.js';
+import createMathJaxSvgExpressions from '../../iterator/math_expression/MathJax.js';
 import { Triggers } from './transition/Trigger.js';
 import OpacityTransition from './transition/Opacity.js';
 
@@ -48,7 +48,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
     async animate(exprs, trigger = Triggers.default, transition = new OpacityTransition()) {
         const container = document.getElementById(this.containerId);
 
-        const mathJaxExprs = new MathJaxSvgExpressions(exprs);
+        const mathJaxExprs = createMathJaxSvgExpressions(exprs);
         const iterator = mathJaxExprs[Symbol.asyncIterator]();
 
         while (true) {
