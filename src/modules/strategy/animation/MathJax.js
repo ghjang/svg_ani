@@ -21,52 +21,34 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         }
     }
 
-    async #applyTransition(gElements, colIndex, trigger, transition) {
-        const delay = (colIndex === 0) ? this.elementAnimationDuration * 0.1 : this.elementAnimationDuration * 0.9;
-
-        if (colIndex == null || colIndex < 0 || colIndex >= gElements.length) {
-            return new Promise(resolve => {
-                trigger.wait((e) => resolve(e), delay, colIndex);
-            });
-        }
-
-        const element = gElements[colIndex];
+    async #applyTransition(element, transition) {
         transition.setTargetTransition(element, this.elementAnimationDuration);
-
-        return new Promise(resolve => {
-            trigger.wait((e) => {
-                transition.setEndState(element);
-                resolve(e);
-            }, delay, colIndex);
-        });
+        transition.setEndState(element);
     }
-
-    #handleEvent(context, event) {
-        if (event && event.direction) {
-            context.nextDirection = event.direction;
-        }
-    }
-
-    async #handleRowExpression(context, gElements, transition, trigger) {
+    
+    async #handleRowExpression(context, gElements, trigger, transition) {
         while (true) {
             const { value, done } = await context.iterator.next(context.nextDirection);
-
+            
             if (done) {
                 break;
             }
 
+            const delay = (value.colIndex === 0) ? this.elementAnimationDuration * 0.1 : this.elementAnimationDuration * 0.9;
+            await trigger.wait(delay);
+
             if (value.endOfRow) {
                 console.log('endOfRow');
-                const event = await this.#applyTransition(gElements, value.colIndex, trigger, transition);
-                this.#handleEvent(context, event);
                 if (value.rowIndex < context.mathJaxExprs.length - 1) {
                     context.container.removeChild(context.rowExpressionSvg);
                 }
                 break;
             }
 
-            const event = await this.#applyTransition(gElements, value.colIndex, trigger, transition);
-            this.#handleEvent(context, event);
+            const element = gElements[value.colIndex];
+            await this.#applyTransition(element, transition);
+
+            console.log(`rowIndex: ${value.rowIndex}, colIndex: ${value.colIndex}`);
         }
     }
 
@@ -109,9 +91,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             animationContext.rowExpressionSvg = value.svgElement;
             container.appendChild(value.svgElement);
 
-            await this.#handleRowExpression(animationContext, value.gElements, transition, trigger);
+            await this.#handleRowExpression(animationContext, value.gElements, trigger, transition);
         }
-
-        trigger.stop();
     }
 }
