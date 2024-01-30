@@ -26,7 +26,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
 
         if (colIndex == null || colIndex < 0 || colIndex >= gElements.length) {
             return new Promise(resolve => {
-                trigger.wait(() => resolve(), delay, colIndex);
+                trigger.wait((e) => resolve(e), delay, colIndex);
             });
         }
 
@@ -34,11 +34,40 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         transition.setTargetTransition(element, this.elementAnimationDuration);
 
         return new Promise(resolve => {
-            trigger.wait(() => {
+            trigger.wait((e) => {
                 transition.setEndState(element);
-                resolve();
+                resolve(e);
             }, delay, colIndex);
         });
+    }
+
+    #handleEvent(context, event) {
+        if (event && event.direction) {
+            context.nextDirection = event.direction;
+        }
+    }
+
+    async #handleRowExpression(context, gElements, transition, trigger) {
+        while (true) {
+            const { value, done } = await context.iterator.next(context.nextDirection);
+
+            if (done) {
+                break;
+            }
+
+            if (value.endOfRow) {
+                console.log('endOfRow');
+                const event = await this.#applyTransition(gElements, value.colIndex, trigger, transition);
+                this.#handleEvent(context, event);
+                if (value.rowIndex < context.mathJaxExprs.length - 1) {
+                    context.container.removeChild(context.rowExpressionSvg);
+                }
+                break;
+            }
+
+            const event = await this.#applyTransition(gElements, value.colIndex, trigger, transition);
+            this.#handleEvent(context, event);
+        }
     }
 
     async animate(exprs, trigger = Triggers.default, transition = new OpacityToggleTransition()) {
@@ -47,7 +76,13 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         const mathJaxExprs = createMathJaxSvgExpressions(exprs);
         const iterator = mathJaxExprs[Symbol.asyncIterator]();
 
-        let nextDirection = "right";
+        const animationContext = {
+            container,
+            mathJaxExprs,
+            iterator,
+            rowExpressionSvg: null,
+            nextDirection: "right"
+        };
 
         while (true) {
             const { value, done } = await iterator.next();
@@ -66,36 +101,15 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 break;
             }
 
-            let svg = value.svgElement;
-            let gElements = value.gElements;
-
             if (value.startOfRow) {
                 console.log('startOfRow');
-                svg = value.svgElement;
-                gElements = value.gElements;    
-                this.#initTransition(gElements, transition);
+                this.#initTransition(value.gElements, transition);
             }
 
-            container.appendChild(svg);
+            animationContext.rowExpressionSvg = value.svgElement;
+            container.appendChild(value.svgElement);
 
-            while (true) {
-                const { value, done } = await iterator.next(nextDirection);
-
-                if (done) {
-                    break;
-                }
-
-                if (value.endOfRow) {
-                    console.log('endOfRow');
-                    await this.#applyTransition(gElements, value.colIndex, trigger, transition);
-                    if (value.rowIndex < mathJaxExprs.length - 1) {
-                        container.removeChild(svg);
-                    }
-                    break;
-                }
-                
-                await this.#applyTransition(gElements, value.colIndex, trigger, transition);
-            }
+            await this.#handleRowExpression(animationContext, value.gElements, transition, trigger);
         }
 
         trigger.stop();
