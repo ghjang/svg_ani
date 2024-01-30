@@ -1,7 +1,7 @@
 import AbstractAnimationStrategy from './Abstract.js';
 import createMathJaxSvgExpressions from '../../iterator/math_expression/MathJax.js';
 import { Triggers } from './transition/Trigger.js';
-import OpacityTransition from './transition/Opacity.js';
+import OpacityToggleTransition from './transition/OpacityToggle.js';
 
 
 export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy {
@@ -22,34 +22,32 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
     }
 
     async #applyTransition(gElements, colIndex, trigger, transition) {
-        if (colIndex == null || colIndex < 0 || colIndex >= gElements.length) {
-            return new Promise(resolve => resolve());
-        }
-
         const delay = (colIndex === 0) ? this.elementAnimationDuration * 0.1 : this.elementAnimationDuration * 0.9;
+
+        if (colIndex == null || colIndex < 0 || colIndex >= gElements.length) {
+            return new Promise(resolve => {
+                trigger.wait(() => resolve(), delay, colIndex);
+            });
+        }
 
         const element = gElements[colIndex];
         transition.setTargetTransition(element, this.elementAnimationDuration);
 
         return new Promise(resolve => {
-            trigger((action) => {
-                transition.setEndState(element, action.direction);
-                resolve(action);
+            trigger.wait(() => {
+                transition.setEndState(element);
+                resolve();
             }, delay, colIndex);
         });
     }
 
-    async #finalizeTransition(gElements) {
-        return new Promise(resolve => {
-            gElements[gElements.length - 1].addEventListener('transitionend', resolve, { once: true });
-        });
-    }
-
-    async animate(exprs, trigger = Triggers.default, transition = new OpacityTransition()) {
+    async animate(exprs, trigger = Triggers.default, transition = new OpacityToggleTransition()) {
         const container = document.getElementById(this.containerId);
 
         const mathJaxExprs = createMathJaxSvgExpressions(exprs);
         const iterator = mathJaxExprs[Symbol.asyncIterator]();
+
+        let nextDirection = "right";
 
         while (true) {
             const { value, done } = await iterator.next();
@@ -58,35 +56,48 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 break;
             }
 
-            const svg = value.svgElement;
-            const gElements = value.gElements;
+            if (value.startOfExpressions) {
+                console.log('startOfExpressions');
+                continue;
+            }
+
+            if (value.endOfExpressions) {
+                console.log('endOfExpressions');
+                break;
+            }
+
+            let svg = value.svgElement;
+            let gElements = value.gElements;
 
             if (value.startOfRow) {
+                console.log('startOfRow');
+                svg = value.svgElement;
+                gElements = value.gElements;    
                 this.#initTransition(gElements, transition);
             }
 
             container.appendChild(svg);
 
             while (true) {
-                const { value, done } = await iterator.next(transition.nextDirection);
+                const { value, done } = await iterator.next(nextDirection);
 
                 if (done) {
                     break;
                 }
 
                 if (value.endOfRow) {
-                    await this.#finalizeTransition(gElements);
+                    console.log('endOfRow');
+                    await this.#applyTransition(gElements, value.colIndex, trigger, transition);
                     if (value.rowIndex < mathJaxExprs.length - 1) {
                         container.removeChild(svg);
                     }
                     break;
                 }
                 
-                const action = await this.#applyTransition(gElements, value.colIndex, trigger, transition);
-                if (action && typeof action.do === 'function') {
-                    action.do(gElements, value.rowIndex, value.colIndex);
-                }
+                await this.#applyTransition(gElements, value.colIndex, trigger, transition);
             }
         }
+
+        trigger.stop();
     }
 }

@@ -8,14 +8,17 @@ class MathJaxSvgExpressions {
     }
 
     async *[Symbol.asyncIterator]() {
+        yield { startOfExpressions: true };
+
         let verticalIncrementVal = 1;
         for (let i = 0; i < this.latexExpressions.length; i += verticalIncrementVal) {
-            const expr = this.latexExpressions[i];
-            const svgElement = await MathJax.tex2svgPromise(expr);
+            const curRowExpr = this.latexExpressions[i];
+            const svgElement = await MathJax.tex2svgPromise(curRowExpr);
 
             const gElements = svgElement.querySelectorAll('use, rect');
 
             if (gElements.length === 0) {
+                // THINK: '빈 줄'이 의미가 있을수도 있다?
                 continue;
             }
 
@@ -29,33 +32,28 @@ class MathJaxSvgExpressions {
             let prevHorizontalDirection = "right";
             let curHorizontalDirection = prevHorizontalDirection;
             let horizontalIncrementVal = 1;
-            for (let j = -1; j >= -2 && j < gElements.length; j += horizontalIncrementVal) {
-                if (prevHorizontalDirection !== curHorizontalDirection) {
-                    horizontalIncrementVal = -horizontalIncrementVal;
-                    j += horizontalIncrementVal;
-                    prevHorizontalDirection = curHorizontalDirection;
-                    continue;
+            let j = 0;
+            for ( ; j >= 0 && j < gElements.length; j += horizontalIncrementVal) {
+                curHorizontalDirection = yield { rowIndex: i, colIndex: j };
+
+                if (curHorizontalDirection === "exit") {
+                    return;
                 }
 
-                const elemInfo = { rowIndex: i, colIndex: j + 1};
-                console.log(`i: ${i}, j: ${j}`);
-                curHorizontalDirection = yield elemInfo;
+                if (prevHorizontalDirection !== curHorizontalDirection) {
+                    horizontalIncrementVal = -horizontalIncrementVal;
+                    prevHorizontalDirection = curHorizontalDirection;
+                }
             }
 
-            console.log(`i: ${i}`);
-
-            if (horizontalIncrementVal === 1) {
-                yield {
-                    rowIndex: i,
-                    endOfRow: true
-                };
-            } else if (horizontalIncrementVal === -1) {
-                yield {
-                    rowIndex: i,
-                    startOfRow: true
-                };
+            if (i === 0 && j < 0) {
+                yield { startOfExpressions: true };
+            } else if (horizontalIncrementVal === 1) {
+                yield { rowIndex: i, endOfRow: true };
             }
         }
+
+        yield { endOfExpressions: true };
     }
 }
 

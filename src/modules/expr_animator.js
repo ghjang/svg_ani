@@ -1,6 +1,6 @@
 import MathJaxAnimationStrategy from './strategy/animation/MathJax.js';
 import { Triggers } from './strategy/animation/transition/Trigger.js';
-import OpacityTransition from './strategy/animation/transition/Opacity.js';
+import OpacityToggleTransition from './strategy/animation/transition/OpacityToggle.js';
 
 
 const privateConstructor = Symbol('privateConstructor');
@@ -17,7 +17,7 @@ export default class ExprAnimator {
         }
     }
 
-    static async create(containerId, trigger = Triggers.default, transition = new OpacityTransition()) {
+    static async create(containerId, trigger = Triggers.default, transition = new OpacityToggleTransition()) {
         const obj = new ExprAnimator(privateConstructor);
 
         obj.#animationStrategy = new MathJaxAnimationStrategy(containerId);
