@@ -15,6 +15,7 @@ export default class ExprAnimator {
         if (symbol !== privateConstructor) {
             throw new Error("Use ExprAnimator.create() instead");
         }
+        this.debug = false;
     }
 
     static async create(containerId, trigger = Triggers.default, transition = new OpacityToggleTransition()) {
@@ -35,6 +36,7 @@ export default class ExprAnimator {
         }
 
         this.#animationStrategy.isAnimating = true;
+        this.#animationStrategy.debug = this.debug;
 
         try {
             let exprs = source;

@@ -1,14 +1,34 @@
 class MathJaxSvgExpressions {
-    constructor(latexExpressions) {
+    constructor(latexExpressions, debug = false) {
         this.latexExpressions = latexExpressions;
+        this.debug = debug;
     }
 
     get length() {
         return this.latexExpressions.length;
     }
 
+    #valueCheck(value) {
+        if (this.debug) {
+            const logValue = this.#getLogValue(value);
+            console.log('Yielding', logValue);
+        }
+        return value;
+    }
+    
+    #getLogValue(value) {
+        const logValue = { ...value };
+        const propertiesToCheck = ['svgElement', 'gElements'];
+        propertiesToCheck.forEach(prop => {
+            if (value[prop]) {
+                logValue[prop] = '...';
+            }
+        });
+        return logValue;
+    }
+
     async *[Symbol.asyncIterator]() {
-        yield { startOfExpressions: true };
+        yield this.#valueCheck({ startOfExpressions: true });
 
         let verticalIncrementVal = 1;
         for (let i = 0; i < this.latexExpressions.length; i += verticalIncrementVal) {
@@ -18,23 +38,22 @@ class MathJaxSvgExpressions {
             const gElements = svgElement.querySelectorAll('use, rect');
 
             if (gElements.length === 0) {
-                // THINK: '빈 줄'이 의미가 있을수도 있다?
                 continue;
             }
 
-            yield {
+            yield this.#valueCheck({
+                startOfRow: true,
+                rowIndex: i,
                 svgElement,
                 gElements,
-                rowIndex: i,
-                startOfRow: true
-            };
+            });
 
             let prevHorizontalDirection = "right";
             let curHorizontalDirection = prevHorizontalDirection;
             let horizontalIncrementVal = 1;
             let j = 0;
             for ( ; j >= 0 && j < gElements.length; j += horizontalIncrementVal) {
-                curHorizontalDirection = yield { rowIndex: i, colIndex: j };
+                curHorizontalDirection = yield this.#valueCheck({ rowIndex: i, colIndex: j });
 
                 if (curHorizontalDirection === "exit") {
                     return;
@@ -47,17 +66,17 @@ class MathJaxSvgExpressions {
             }
 
             if (i === 0 && j < 0) {
-                yield { startOfExpressions: true };
+                yield this.#valueCheck({ startOfExpressions: true });
             } else if (horizontalIncrementVal === 1) {
-                yield { rowIndex: i, endOfRow: true };
+                yield this.#valueCheck({ rowIndex: i, endOfRow: true });
             }
         }
 
-        yield { endOfExpressions: true };
+        yield this.#valueCheck({ endOfExpressions: true });
     }
 }
 
 
-export default function createMathJaxSvgExpressions(latexExpressions) {
-    return new MathJaxSvgExpressions(latexExpressions);
+export default function createMathJaxSvgExpressions(latexExpressions, debug = false) {
+    return new MathJaxSvgExpressions(latexExpressions, debug);
 }

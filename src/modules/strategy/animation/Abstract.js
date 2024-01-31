@@ -5,6 +5,7 @@ export default class AbstractAnimationStrategy {
         }
         this.containerId = containerId;
         this.isAnimating = false;
+        this.debug = false;
     }
 
     async init() {

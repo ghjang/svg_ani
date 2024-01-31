@@ -38,7 +38,6 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             await trigger.wait(delay);
 
             if (value.endOfRow) {
-                console.log('endOfRow');
                 if (value.rowIndex < context.mathJaxExprs.length - 1) {
                     context.container.removeChild(context.rowExpressionSvg);
                 }
@@ -47,15 +46,13 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
 
             const element = gElements[value.colIndex];
             await this.#applyTransition(element, transition);
-
-            console.log(`rowIndex: ${value.rowIndex}, colIndex: ${value.colIndex}`);
         }
     }
 
     async animate(exprs, trigger = Triggers.default, transition = new OpacityToggleTransition()) {
         const container = document.getElementById(this.containerId);
 
-        const mathJaxExprs = createMathJaxSvgExpressions(exprs);
+        const mathJaxExprs = createMathJaxSvgExpressions(exprs, this.debug);
         const iterator = mathJaxExprs[Symbol.asyncIterator]();
 
         const animationContext = {
@@ -74,17 +71,14 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             }
 
             if (value.startOfExpressions) {
-                console.log('startOfExpressions');
                 continue;
             }
 
             if (value.endOfExpressions) {
-                console.log('endOfExpressions');
                 break;
             }
 
             if (value.startOfRow) {
-                console.log('startOfRow');
                 this.#initTransition(animationContext, value.gElements, transition);
             }
 
