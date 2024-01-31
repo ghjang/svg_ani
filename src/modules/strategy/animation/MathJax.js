@@ -14,7 +14,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         await MathJax.startup.promise;
     }
 
-    #initTransition(gElements, transition) {
+    #initTransition(_context, gElements, transition) {
         for (let i = 0; i < gElements.length; ++i) {
             const element = gElements[i];
             transition.setStartState(element);
@@ -85,7 +85,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
 
             if (value.startOfRow) {
                 console.log('startOfRow');
-                this.#initTransition(value.gElements, transition);
+                this.#initTransition(animationContext, value.gElements, transition);
             }
 
             animationContext.rowExpressionSvg = value.svgElement;
