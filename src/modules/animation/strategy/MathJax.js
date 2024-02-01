@@ -1,7 +1,7 @@
 import AbstractAnimationStrategy from './Abstract.js';
-import createMathJaxSvgExpressions from '../../iterator/math_expression/MathJax.js';
-import { Triggers } from './transition/Trigger.js';
-import OpacityToggleTransition from './transition/OpacityToggle.js';
+import createMathJaxSvgExpressions from '../../data/math_expression/MathJax.js';
+import { Triggers } from '../transition/Trigger.js';
+import OpacityToggleTransition from '../transition/OpacityToggle.js';
 
 
 export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy {

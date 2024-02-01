@@ -1,6 +1,6 @@
-import MathJaxAnimationStrategy from './strategy/animation/MathJax.js';
-import { Triggers } from './strategy/animation/transition/Trigger.js';
-import OpacityToggleTransition from './strategy/animation/transition/OpacityToggle.js';
+import MathJaxAnimationStrategy from './animation/strategy/MathJax.js';
+import { Triggers } from './animation/transition/Trigger.js';
+import OpacityToggleTransition from './animation/transition/OpacityToggle.js';
 
 
 const privateConstructor = Symbol('privateConstructor');
