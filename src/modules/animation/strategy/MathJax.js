@@ -1,5 +1,5 @@
 import AbstractAnimationStrategy from './Abstract.js';
-import createMathJaxSvgExpressions from '../../data/math_expression/MathJax.js';
+import { DataPointer, Direction } from '../../data/DataPointer.js';
 import { Triggers } from '../transition/Trigger.js';
 import OpacityToggleTransition from '../transition/OpacityToggle.js';
 
@@ -28,7 +28,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
     
     async #handleRowExpression(context, gElements, trigger, transition) {
         while (true) {
-            const { value, done } = await context.iterator.next(context.nextDirection);
+            const { value, done } = await context.dataPointer.moveTo(context.nextDirection);
             
             if (done) {
                 break;
@@ -38,7 +38,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             await trigger.wait(delay);
 
             if (value.endOfRow) {
-                if (value.rowIndex < context.mathJaxExprs.length - 1) {
+                if (value.rowIndex < context.dataPointer.totalRowCount - 1) {
                     context.container.removeChild(context.rowExpressionSvg);
                 }
                 break;
@@ -52,19 +52,17 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
     async animate(exprs, trigger = Triggers.default, transition = new OpacityToggleTransition()) {
         const container = document.getElementById(this.containerId);
 
-        const mathJaxExprs = createMathJaxSvgExpressions(exprs, this.debug);
-        const iterator = mathJaxExprs[Symbol.asyncIterator]();
+        const dataPointer = new DataPointer(exprs, this.debug);
 
-        const animationContext = {
+        const context = {
             container,
-            mathJaxExprs,
-            iterator,
+            dataPointer,
             rowExpressionSvg: null,
-            nextDirection: "right"
+            nextDirection: Direction.RIGHT
         };
 
         while (true) {
-            const { value, done } = await iterator.next();
+            const { value, done } = await dataPointer.moveTo(context.nextDirection);
 
             if (done) {
                 break;
@@ -79,13 +77,13 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             }
 
             if (value.startOfRow) {
-                this.#initTransition(animationContext, value.gElements, transition);
+                this.#initTransition(context, value.gElements, transition);
             }
 
-            animationContext.rowExpressionSvg = value.svgElement;
+            context.rowExpressionSvg = value.svgElement;
             container.appendChild(value.svgElement);
 
-            await this.#handleRowExpression(animationContext, value.gElements, trigger, transition);
+            await this.#handleRowExpression(context, value.gElements, trigger, transition);
         }
     }
 }
