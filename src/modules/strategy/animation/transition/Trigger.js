@@ -3,7 +3,7 @@ class AutoTimerTrigger {
     #rejectWait = null;
     #timerId = null;
 
-    async wait(delay = 0) {
+    wait(delay = 0) {
         return new Promise((resolve, reject) => {
             this.#resolveWait = resolve;
             this.#rejectWait = reject;
@@ -16,7 +16,7 @@ class AutoTimerTrigger {
         });
     }
 
-    async stop() {
+    stop() {
         if (this.#timerId) {
             clearTimeout(this.#timerId);
             this.#timerId = null;
@@ -37,7 +37,7 @@ class ForwardOnlyTrigger {
     #rejectWait = null;
     #onKeydown = null;
 
-    async wait(_delay) {
+    wait(_delay) {
         return new Promise((resolve, reject) => {
             this.#resolveWait = resolve;
             this.#rejectWait = reject;
@@ -51,7 +51,7 @@ class ForwardOnlyTrigger {
         });
     }
     
-    async stop() {
+    stop() {
         if (this.#onKeydown) {
             window.removeEventListener('keydown', this.#onKeydown);
             this.#onKeydown = null;
