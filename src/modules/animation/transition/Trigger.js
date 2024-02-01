@@ -1,3 +1,6 @@
+import Direction from "../../data/Direction.js";
+
+
 class AutoTimerTrigger {
     #resolveWait = null;
     #rejectWait = null;
@@ -43,8 +46,11 @@ class ForwardOnlyTrigger {
             this.#rejectWait = reject;
             this.#onKeydown = (event) => {
                 if (event.code === 'ArrowRight') {
+                    console.log('ArrowRight');
                     window.removeEventListener('keydown', this.#onKeydown);
-                    this.#resolveWait();
+                    this.#resolveWait({
+                        nextDirection: Direction.RIGHT
+                    });
                 }
             };
             window.addEventListener('keydown', this.#onKeydown);
@@ -67,38 +73,42 @@ class ForwardOnlyTrigger {
 }
 
 
-const bidirectionalTrigger = (callback, _delay, _colIndex) => {
-    window.addEventListener('keydown', function onKeydown(event) {
-        if (event.code === 'ArrowRight') {
-            console.log('ArrowRight');
+class BidirectionalTrigger {
+    #resolveWait = null;
+    #rejectWait = null;
+    #onKeydown = null;
 
-            window.removeEventListener('keydown', onKeydown);
-
-            const action = {
-                direction: "right",
-                do: (graphicElements, _curRowIndex, curColIndex) => {
-                    if (curColIndex + 1 >= graphicElements.length) {
-                    }
+    wait(_delay) {
+        return new Promise((resolve, reject) => {
+            this.#resolveWait = resolve;
+            this.#rejectWait = reject;
+            this.#onKeydown = (event) => {
+                if (event.code === 'ArrowRight' || event.code === 'ArrowLeft') {
+                    window.removeEventListener('keydown', this.#onKeydown);
+                    selectedDirection = (event.code === 'ArrowRight') ? Direction.RIGHT : Direction.LEFT;
+                    this.#resolveWait({
+                        nextDirection: selectedDirection
+                    });
                 }
             };
-
-            callback(action);
-        } else if (event.code === 'ArrowLeft') {
-            window.removeEventListener('keydown', onKeydown);
-
-            const action = {
-                direction: "left",
-                do: (graphicElements, _curRowIndex, curColIndex) => {
-                    if (curColIndex - 1 >= 0) {
-                        graphicElements[curColIndex - 1].style.opacity = 0;
-                    }
-                }
-            };
-
-            callback(action);
+            window.addEventListener('keydown', this.#onKeydown);
+        });
+    }
+    
+    stop() {
+        if (this.#onKeydown) {
+            window.removeEventListener('keydown', this.#onKeydown);
+            this.#onKeydown = null;
         }
-    });
-};
+        if (this.#rejectWait) {
+            this.#rejectWait(new Error('Stopped by user'));
+            this.#rejectWait = null;
+        }
+        if (this.#resolveWait) {
+            this.#resolveWait = null;
+        }
+    }
+}
 
 
 const defaultTrigger = new AutoTimerTrigger();
@@ -107,6 +117,6 @@ const defaultTrigger = new AutoTimerTrigger();
 export const Triggers = {
     autoTimer: defaultTrigger,
     forwardOnly: new ForwardOnlyTrigger(),
-    bidirectional: bidirectionalTrigger,
+    bidirectional: new BidirectionalTrigger(),
     default: defaultTrigger
 };

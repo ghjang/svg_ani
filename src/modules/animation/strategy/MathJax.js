@@ -1,5 +1,6 @@
 import AbstractAnimationStrategy from './Abstract.js';
-import { DataPointer, Direction } from '../../data/DataPointer.js';
+import Direction from '../../data/Direction.js';
+import DataPointer from '../../data/DataPointer.js';
 import { Triggers } from '../transition/Trigger.js';
 import OpacityToggleTransition from '../transition/OpacityToggle.js';
 
@@ -35,7 +36,8 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             }
 
             const delay = (value.colIndex === 0) ? this.elementAnimationDuration * 0.1 : this.elementAnimationDuration * 0.9;
-            await trigger.wait(delay);
+            const { nextDirection } = await trigger.wait(delay);
+            context.nextDirection = nextDirection
 
             if (value.endOfRow) {
                 if (value.rowIndex < context.dataPointer.totalRowCount - 1) {
