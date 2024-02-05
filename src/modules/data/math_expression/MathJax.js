@@ -18,7 +18,7 @@ class MathJaxSvgExpressions {
         }
         return value;
     }
-    
+
     #getLogValue(value) {
         const logValue = { ...value };
         const propertiesToCheck = ['svgElement', 'gElements'];
@@ -52,7 +52,12 @@ class MathJaxSvgExpressions {
 
             let curHorizontalDirection = Direction.RIGHT;
             for (let j = 0; j < gElements.length; ++j) {
-                curHorizontalDirection = yield this.#valueCheck({ rowIndex: i, colIndex: j });
+                curHorizontalDirection = yield this.#valueCheck({
+                    rowIndex: i,
+                    colIndex: j,
+                    svgElement,
+                    gElements
+                });
 
                 if (curHorizontalDirection === Direction.EXIT) {
                     if (this.debug) {
@@ -62,7 +67,12 @@ class MathJaxSvgExpressions {
                 }
             }
 
-            yield this.#valueCheck({ rowIndex: i, endOfRow: true });
+            yield this.#valueCheck({
+                endOfRow: true,
+                rowIndex: i,
+                svgElement,
+                gElements
+            });
         }
 
         yield this.#valueCheck({ endOfExpressions: true });
