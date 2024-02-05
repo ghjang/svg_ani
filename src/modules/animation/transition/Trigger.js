@@ -83,9 +83,17 @@ class BidirectionalTrigger {
             this.#resolveWait = resolve;
             this.#rejectWait = reject;
             this.#onKeydown = (event) => {
+                let selectedDirection = null;
                 if (event.code === 'ArrowRight' || event.code === 'ArrowLeft') {
+                    selectedDirection = (event.code === 'ArrowRight') ? Direction.RIGHT : Direction.LEFT;
+                } else if (event.code === 'Home') {
+                    selectedDirection = Direction.HOME;
+                } else if (event.code === 'End') {
+                    selectedDirection = Direction.END;
+                }
+
+                if (selectedDirection !== null) {
                     window.removeEventListener('keydown', this.#onKeydown);
-                    const selectedDirection = (event.code === 'ArrowRight') ? Direction.RIGHT : Direction.LEFT;
                     this.#resolveWait({
                         nextDirection: selectedDirection
                     });

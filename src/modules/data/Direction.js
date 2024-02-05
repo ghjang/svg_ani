@@ -4,6 +4,9 @@ const Direction = {
     UP: 'up',
     DOWN: 'down',
 
+    HOME: 'home',
+    END: 'end',
+
     EXIT: 'exit'
 };
 

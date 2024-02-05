@@ -55,10 +55,28 @@ export default class DataPointer {
             case Direction.DOWN:
                 break;
 
+            case Direction.HOME:
+                while (this.pointerX > 0 && this.data[this.pointerX].value.startOfRow == null) {
+                    --this.pointerX;
+                }
+                break;
+
+            case Direction.END:
+                while (this.pointerX >= 0 && this.data[this.pointerX].value.endOfRow == null) {
+                    if (this.pointerX < this.data.length - 1) {
+                        ++this.pointerX;
+                    } else if (this.iterator) {
+                        await this.#fetchNextCol(nextDirection);
+                    } else if (this.pointerX >= this.data.length - 1) {
+                        break;
+                    }
+                }
+                break;
+
             default:
                 throw new Error(`Invalid direction: ${nextDirection}`);
         }
 
-        return this.data[this.pointerX];
+        return (this.pointerX >= 0 && this.pointerX < this.data.length) ? this.data[this.pointerX] : null;
     }
 }

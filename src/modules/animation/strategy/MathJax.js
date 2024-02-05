@@ -39,12 +39,43 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             const { nextDirection } = await trigger.wait(delay);
             context.nextDirection = nextDirection
 
-            if (context.isNextDirectionChanged) {
+            if (context.nextDirection === Direction.HOME) {
+                data = await context.dataPointer.moveTo(context.nextDirection);
+                context.nextDirection = Direction.RIGHT;
+                data = await context.dataPointer.moveTo(context.nextDirection);
+                context.nextDirection = Direction.LEFT;
+                this.#initTransition(context, data.value.gElements, transition);
+                continue;
+            } else if (context.nextDirection === Direction.END) {
+                context.nextDirection = Direction.RIGHT;
+
+                let element = null;
+
+                if (data.value.colIndex != null) {
+                    element = gElements[data.value.colIndex];
+                    if (element.style.opacity == 0) {
+                        await this.#applyTransition(element, transition);
+                    }
+                }
+
+                while (!data.value.endOfRow) {
+                    data = await context.dataPointer.moveTo(context.nextDirection);
+                    if (data.value.colIndex != null) {
+                        element = gElements[data.value.colIndex];
+                        await this.#applyTransition(element, transition);
+                    }
+                }
+                context.nextDirection = Direction.LEFT;
+                data = await context.dataPointer.moveTo(context.nextDirection);
+                context.nextDirection = Direction.RIGHT;
+                continue;
+            }
+
+            if (context.isNextDirectionChanged) { // '연속적인 수평 이동'의 '방향'이 변경되었을 경우,
                 data = await context.dataPointer.moveTo(context.nextDirection);
             }
 
             if (data.value.startOfRow) {
-                console.log('startOfRow');
                 if (context.nextDirection === Direction.LEFT) {
                     if (data.value.rowIndex > 0) {
                         context.container.removeChild(context.rowExpressionSvg);
@@ -89,7 +120,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             },
 
             get isNextDirectionChanged() {
-                return _prevDirection !== null && _prevDirection !== _nextDirection;
+                return (_prevDirection !== null) && (_prevDirection !== _nextDirection);
             }
         };
 
@@ -101,11 +132,9 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             }
 
             if (data.value.startOfExpressions) {
-                console.log('startOfExpressions');
                 context.nextDirection = Direction.RIGHT;
                 data = await dataPointer.moveTo(context.nextDirection);
             } else if (data.value.endOfExpressions) {
-                console.log('endOfExpressions');
                 context.nextDirection = Direction.LEFT;
                 data = await dataPointer.moveTo(context.nextDirection);
             }
