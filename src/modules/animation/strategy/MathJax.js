@@ -22,6 +22,13 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         }
     }
 
+    #finalizeTransition(_context, gElements, transition) {
+        for (let i = 0; i < gElements.length; ++i) {
+            const element = gElements[i];
+            transition.setFinalState(element);
+        }
+    }
+
     async #applyTransition(element, transition) {
         transition.setTargetTransition(element, this.elementAnimationDuration);
         transition.setEndState(element);
@@ -31,8 +38,8 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         if (this.debug) {
             console.log(
                 `curDataPos.value.colIndex=${curDataPos.value.colIndex}`
-                + `, context.nextDirection=${context.nextDirection}`
-                + `, context.isNextDirectionChanged=${context.isNextDirectionChanged}`
+                + `, context.direction=${context.direction}`
+                + `, context.isDirectionChanged=${context.isDirectionChanged}`
             );
         }
 
@@ -41,31 +48,35 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
     }
 
     async #loopDataPointer(context, trigger, transition) {
-        let curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+        let curDataPos = await context.dataPointer.moveTo(context.direction);
 
         do {
             if (curDataPos.value.startOfExpressions) {
-                context.nextDirection = Direction.RIGHT;
-                curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+                context.direction = Direction.RIGHT;
+                curDataPos = await context.dataPointer.moveTo(context.direction);
             } else if (curDataPos.value.endOfExpressions) {
-                context.nextDirection = Direction.LEFT;
-                curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+                context.direction = Direction.LEFT;
+                curDataPos = await context.dataPointer.moveTo(context.direction);
             }
 
             if (curDataPos.value.startOfRow) {
-                if (context.nextDirection === Direction.RIGHT) {
+                if (context.userDirection === Direction.HOME) {
                     this.#initTransition(context, curDataPos.value.gElements, transition);
-                } else if (context.nextDirection === Direction.LEFT) {
+                } else if (context.direction === Direction.RIGHT) {
+                    this.#initTransition(context, curDataPos.value.gElements, transition);
+                } else if (context.direction === Direction.LEFT) {
                     // NOTE: '왼쪽 진행' 방향이었다면, 미리 앞선 'endOfRow'로 이동시켜
                     //       '왼쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
-                    curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+                    curDataPos = await context.dataPointer.moveTo(context.direction);
                     continue;
                 }
             } else if (curDataPos.value.endOfRow) {
-                if (context.nextDirection === Direction.RIGHT) {
+                if (context.userDirection === Direction.END) {
+                    this.#finalizeTransition(context, curDataPos.value.gElements, transition);
+                } else if (context.direction === Direction.RIGHT) {
                     // NOTE: '오른쪽 진행' 방향이었다면, 미리 다음 'startOfRow'로 이동시켜
                     //       '오른쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
-                    curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+                    curDataPos = await context.dataPointer.moveTo(context.direction);
                     continue;
                 }
             }
@@ -88,10 +99,13 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         do {
             const delay = this.elementAnimationDuration * 0.9;
             const { nextDirection } = await trigger.wait(delay);
-            context.nextDirection = nextDirection
+            context.direction = nextDirection
 
-            if (curDataPos === null || !context.isNextDirectionChanged) {
-                curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+            if (curDataPos === null
+                || !context.isDirectionChanged
+                || nextDirection === Direction.HOME
+                || nextDirection === Direction.END) {
+                curDataPos = await context.dataPointer.moveTo(nextDirection);
             }
 
             if (curDataPos.value.startOfExpressions || curDataPos.value.endOfExpressions
@@ -112,24 +126,38 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
 
         const dataPointer = new DataPointer(exprs, this.debug);
 
-        let _nextDirection = Direction.RIGHT;
+        let _direction = Direction.RIGHT;
         let _prevDirection = null;
+        let _userDirection = null;
         const context = {
             container,
             dataPointer,
             rowExpressionSvg: null,
 
-            get nextDirection() {
-                return _nextDirection;
+            get userDirection() {
+                return _userDirection;
             },
 
-            set nextDirection(value) {
-                _prevDirection = _nextDirection;
-                _nextDirection = value;
+            get direction() {
+                return _direction;
             },
 
-            get isNextDirectionChanged() {
-                return (_prevDirection !== null) && (_prevDirection !== _nextDirection);
+            set direction(value) {
+                _userDirection = value;
+
+                if (value === Direction.HOME) {
+                    value = Direction.LEFT;
+                } else if (value === Direction.END) {
+                    value = Direction.RIGHT;
+                }
+
+                _prevDirection = _direction;
+                _direction = value;
+            },
+
+            get isDirectionChanged() {
+                return (_prevDirection !== null)
+                    && (_prevDirection !== _direction);
             }
         };
 
