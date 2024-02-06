@@ -27,75 +27,84 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         transition.setEndState(element);
     }
 
-    async #handleRowExpression(context, gElements, trigger, transition) {
-        while (true) {
-            let data = await context.dataPointer.moveTo(context.nextDirection);
+    async #updateElement(context, curDataPos, gElements, transition) {
+        if (this.debug) {
+            console.log(
+                `curDataPos.value.colIndex=${curDataPos.value.colIndex}`
+                + `, context.nextDirection=${context.nextDirection}`
+                + `, context.isNextDirectionChanged=${context.isNextDirectionChanged}`
+            );
+        }
 
-            if (data.done) {
-                break;
+        const element = gElements[curDataPos.value.colIndex];
+        await this.#applyTransition(element, transition);
+    }
+
+    async #loopDataPointer(context, trigger, transition) {
+        let curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+
+        do {
+            if (curDataPos.value.startOfExpressions) {
+                context.nextDirection = Direction.RIGHT;
+                curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+            } else if (curDataPos.value.endOfExpressions) {
+                context.nextDirection = Direction.LEFT;
+                curDataPos = await context.dataPointer.moveTo(context.nextDirection);
             }
 
-            const delay = (data.value.colIndex === 0) ? this.elementAnimationDuration * 0.1 : this.elementAnimationDuration * 0.9;
+            if (curDataPos.value.startOfRow) {
+                if (context.nextDirection === Direction.RIGHT) {
+                    this.#initTransition(context, curDataPos.value.gElements, transition);
+                } else if (context.nextDirection === Direction.LEFT) {
+                    // NOTE: '왼쪽 진행' 방향이었다면, 미리 앞선 'endOfRow'로 이동시켜
+                    //       '왼쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
+                    curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+                    continue;
+                }
+            } else if (curDataPos.value.endOfRow) {
+                if (context.nextDirection === Direction.RIGHT) {
+                    // NOTE: '오른쪽 진행' 방향이었다면, 미리 다음 'startOfRow'로 이동시켜
+                    //       '오른쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
+                    curDataPos = await context.dataPointer.moveTo(context.nextDirection);
+                    continue;
+                }
+            }
+
+            if (curDataPos.value.svgElement) {
+                if (context.rowExpressionSvg) {
+                    context.container.removeChild(context.rowExpressionSvg);
+                }
+                context.rowExpressionSvg = curDataPos.value.svgElement;
+                context.container.appendChild(curDataPos.value.svgElement);
+            }
+
+            curDataPos = await this.#handleTriggerEvent(context, curDataPos.value.gElements, trigger, transition);
+        } while (!curDataPos.done);
+    }
+
+    async #handleTriggerEvent(context, gElements, trigger, transition) {
+        let curDataPos = null;
+
+        do {
+            const delay = this.elementAnimationDuration * 0.9;
             const { nextDirection } = await trigger.wait(delay);
             context.nextDirection = nextDirection
 
-            if (context.nextDirection === Direction.HOME) {
-                data = await context.dataPointer.moveTo(context.nextDirection);
-                context.nextDirection = Direction.RIGHT;
-                data = await context.dataPointer.moveTo(context.nextDirection);
-                context.nextDirection = Direction.LEFT;
-                this.#initTransition(context, data.value.gElements, transition);
-                continue;
-            } else if (context.nextDirection === Direction.END) {
-                context.nextDirection = Direction.RIGHT;
-
-                let element = null;
-
-                if (data.value.colIndex != null) {
-                    element = gElements[data.value.colIndex];
-                    if (element.style.opacity == 0) {
-                        await this.#applyTransition(element, transition);
-                    }
-                }
-
-                while (!data.value.endOfRow) {
-                    data = await context.dataPointer.moveTo(context.nextDirection);
-                    if (data.value.colIndex != null) {
-                        element = gElements[data.value.colIndex];
-                        await this.#applyTransition(element, transition);
-                    }
-                }
-                context.nextDirection = Direction.LEFT;
-                data = await context.dataPointer.moveTo(context.nextDirection);
-                context.nextDirection = Direction.RIGHT;
-                continue;
+            if (curDataPos === null || !context.isNextDirectionChanged) {
+                curDataPos = await context.dataPointer.moveTo(context.nextDirection);
             }
 
-            if (context.isNextDirectionChanged) { // '연속적인 수평 이동'의 '방향'이 변경되었을 경우,
-                data = await context.dataPointer.moveTo(context.nextDirection);
-            }
-
-            if (data.value.startOfRow) {
-                if (context.nextDirection === Direction.LEFT) {
-                    if (data.value.rowIndex > 0) {
-                        context.container.removeChild(context.rowExpressionSvg);
-                    } else {
-                        data = await context.dataPointer.moveTo(context.nextDirection);
-                    }
-                    break;
-                }
-            } else if (data.value.endOfRow) {
-                if (data.value.rowIndex < context.dataPointer.totalRowCount - 1) {
-                    context.container.removeChild(context.rowExpressionSvg);
-                }
+            if (curDataPos.value.startOfExpressions || curDataPos.value.endOfExpressions
+                || curDataPos.value.startOfRow || curDataPos.value.endOfRow) {
                 break;
-            } else if (data.value.colIndex != null) {
-                const element = gElements[data.value.colIndex];
-                await this.#applyTransition(element, transition);
+            } else if (curDataPos.value.colIndex != null) {
+                await this.#updateElement(context, curDataPos, gElements, transition);
             } else {
-                break;
+                throw new Error(`Invalid data: data.value=${JSON.stringify(curDataPos.value)} data.done=${curDataPos.done}`);
             }
-        }
+        } while (!curDataPos.done);
+
+        return curDataPos;
     }
 
     async animate(exprs, trigger = Triggers.default, transition = new OpacityToggleTransition()) {
@@ -124,31 +133,6 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             }
         };
 
-        while (true) {
-            let data = await dataPointer.moveTo(context.nextDirection);
-
-            if (data.done) {
-                break;
-            }
-
-            if (data.value.startOfExpressions) {
-                context.nextDirection = Direction.RIGHT;
-                data = await dataPointer.moveTo(context.nextDirection);
-            } else if (data.value.endOfExpressions) {
-                context.nextDirection = Direction.LEFT;
-                data = await dataPointer.moveTo(context.nextDirection);
-            }
-
-            if (data.value.startOfRow) {
-                this.#initTransition(context, data.value.gElements, transition);
-            }
-
-            if (data.value.svgElement) {
-                context.rowExpressionSvg = data.value.svgElement;
-                container.appendChild(data.value.svgElement);
-            }
-
-            await this.#handleRowExpression(context, data.value.gElements, trigger, transition);
-        }
+        await this.#loopDataPointer(context, trigger, transition);
     }
 }
