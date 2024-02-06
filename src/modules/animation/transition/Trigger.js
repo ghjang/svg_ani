@@ -11,7 +11,9 @@ class AutoTimerTrigger {
             this.#resolveWait = resolve;
             this.#rejectWait = reject;
             this.#timerId = setTimeout(() => {
-                this.#resolveWait();
+                this.#resolveWait({
+                    nextDirection: Direction.RIGHT
+                });
                 this.#timerId = null;
                 this.#resolveWait = null;
                 this.#rejectWait = null;
