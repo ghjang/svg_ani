@@ -55,8 +55,16 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 context.direction = Direction.RIGHT;
                 curDataPos = await context.dataPointer.moveTo(context.direction);
             } else if (curDataPos.value.endOfExpressions) {
+                const userDirection = context.userDirection;
+
                 context.direction = Direction.LEFT;
                 curDataPos = await context.dataPointer.moveTo(context.direction);
+
+                context.userDirection = userDirection;
+                if (context.userDirection === Direction.CTRL_END) {
+                    console.log('context.userDirection === Direction.CTRL_END');
+                    context.userDirection = Direction.END;
+                }
             }
 
             if (curDataPos.value.startOfRow) {
@@ -104,7 +112,9 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
             if (curDataPos === null
                 || !context.isDirectionChanged
                 || nextDirection === Direction.HOME
-                || nextDirection === Direction.END) {
+                || nextDirection === Direction.END
+                || nextDirection === Direction.CTRL_HOME
+                || nextDirection === Direction.CTRL_END) {
                 curDataPos = await context.dataPointer.moveTo(nextDirection);
             }
 
@@ -138,6 +148,10 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 return _userDirection;
             },
 
+            set userDirection(value) {
+                _userDirection = value;
+            },
+
             get direction() {
                 return _direction;
             },
@@ -148,6 +162,10 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 if (value === Direction.HOME) {
                     value = Direction.LEFT;
                 } else if (value === Direction.END) {
+                    value = Direction.RIGHT;
+                } else if (value === Direction.CTRL_HOME) {
+                    value = Direction.LEFT;
+                } else if (value === Direction.CTRL_END) {
                     value = Direction.RIGHT;
                 }
 

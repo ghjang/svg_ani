@@ -8,6 +8,10 @@ export default class OpacityToggleTransition {
     }
 
     setEndState(element) {
+        if (element.style.opacity == null || element.style.opacity == '') {
+            element.style.opacity = 1;
+        }
+        
         element.style.opacity = (element.style.opacity == 1) ? 0 : 1;
     }
 

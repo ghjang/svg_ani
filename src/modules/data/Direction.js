@@ -6,6 +6,8 @@ const Direction = {
 
     HOME: 'home',
     END: 'end',
+    CTRL_HOME: 'ctrl_home',
+    CTRL_END: 'ctrl_end',
 
     EXIT: 'exit'
 };

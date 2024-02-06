@@ -88,10 +88,10 @@ class BidirectionalTrigger {
                 let selectedDirection = null;
                 if (event.code === 'ArrowRight' || event.code === 'ArrowLeft') {
                     selectedDirection = (event.code === 'ArrowRight') ? Direction.RIGHT : Direction.LEFT;
-                } else if (event.code === 'Home') {
-                    selectedDirection = Direction.HOME;
-                } else if (event.code === 'End') {
-                    selectedDirection = Direction.END;
+                } else if (event.key === 'Home') {
+                    selectedDirection = event.ctrlKey ? Direction.CTRL_HOME : Direction.HOME;
+                } else if (event.key === 'End') {
+                    selectedDirection = event.ctrlKey ? Direction.CTRL_END : Direction.END;
                 }
 
                 if (selectedDirection !== null) {

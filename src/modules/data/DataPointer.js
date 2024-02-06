@@ -18,7 +18,7 @@ export default class DataPointer {
         return this.mathJaxExprs.length;
     }
 
-    async #fetchNextCol(nextDirection) {
+    async #fetchNextElementData(nextDirection) {
         if (this.iterator === null) {
             throw new Error('Iterator is null');
         }
@@ -47,7 +47,7 @@ export default class DataPointer {
                 if (this.pointerX < this.data.length - 1) {
                     ++this.pointerX;
                 } else if (this.iterator) {
-                    await this.#fetchNextCol(nextDirection);
+                    await this.#fetchNextElementData(nextDirection);
                 }
                 break;
 
@@ -66,7 +66,26 @@ export default class DataPointer {
                     if (this.pointerX < this.data.length - 1) {
                         ++this.pointerX;
                     } else if (this.iterator) {
-                        await this.#fetchNextCol(nextDirection);
+                        await this.#fetchNextElementData(nextDirection);
+                    } else if (this.pointerX >= this.data.length - 1) {
+                        break;
+                    }
+                }
+                break;
+
+            case Direction.CTRL_HOME:
+                if (this.pointerX < 0) {
+                    await this.#fetchNextElementData(nextDirection);
+                }
+                this.pointerX = 0;
+                break;
+
+            case Direction.CTRL_END:
+                while (this.pointerX >= 0 && this.data[this.pointerX].value.endOfExpressions == null) {
+                    if (this.pointerX < this.data.length - 1) {
+                        ++this.pointerX;
+                    } else if (this.iterator) {
+                        await this.#fetchNextElementData(nextDirection);
                     } else if (this.pointerX >= this.data.length - 1) {
                         break;
                     }
