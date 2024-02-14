@@ -1,5 +1,5 @@
 import MathJaxAnimationStrategy from './animation/strategy/MathJax.js';
-import { Triggers } from './animation/transition/Trigger.js';
+import { Triggers } from './animation/trigger/Triggers.js';
 import OpacityToggleTransition from './animation/transition/OpacityToggle.js';
 
 

@@ -1,7 +1,7 @@
 import AbstractAnimationStrategy from './Abstract.js';
 import Direction from '../../data/Direction.js';
 import DataPointer from '../../data/DataPointer.js';
-import { Triggers } from '../transition/Trigger.js';
+import { Triggers } from '../trigger/Triggers.js';
 import OpacityToggleTransition from '../transition/OpacityToggle.js';
 
 
