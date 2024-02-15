@@ -15,15 +15,23 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         await MathJax.startup.promise;
     }
 
-    #initTransition(_context, transition, gElements) {
-        for (let i = 0; i < gElements.length; ++i) {
+    #initTransition(_context, transition, gElements, toIndex = gElements.length - 1) {
+        if (toIndex < 0 || toIndex >= gElements.length) {
+            throw new Error(`Invalid index: toIndex=${toIndex}, gElements.length=${gElements.length}`);
+        }
+
+        for (let i = 0; i <= toIndex; ++i) {
             const element = gElements[i];
             transition.setStartState(element);
         }
     }
 
-    #finalizeTransition(_context, transition, gElements) {
-        for (let i = 0; i < gElements.length; ++i) {
+    #finalizeTransition(_context, transition, gElements, toIndex = gElements.length - 1) {
+        if (toIndex < 0 || toIndex >= gElements.length) {
+            throw new Error(`Invalid index: toIndex=${toIndex}, gElements.length=${gElements.length}`);
+        }
+
+        for (let i = 0; i <= toIndex; ++i) {
             const element = gElements[i];
             transition.setFinalState(element);
         }
@@ -79,7 +87,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                     continue;
                 }
             } else if (curDataPos.value.endOfRow) {
-                if (context.userDirection === Direction.END) {
+                if (context.userDirection === Direction.END || context.userDirection === Direction.DOWN) {
                     this.#finalizeTransition(context, transition, curDataPos.value.gElements);
                 } else if (context.direction === Direction.RIGHT) {
                     // NOTE: '오른쪽 진행' 방향이었다면, 미리 다음 'startOfRow'로 이동시켜
@@ -93,7 +101,15 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 if (context.rowExpressionSvg) {
                     context.container.removeChild(context.rowExpressionSvg);
                 }
+
                 context.rowExpressionSvg = curDataPos.value.svgElement;
+                
+                if (context.userDirection === Direction.UP || context.userDirection === Direction.DOWN) {
+                    this.#initTransition(context, transition, curDataPos.value.gElements);
+                    const toIndex = curDataPos.value.colIndex ? curDataPos.value.colIndex : curDataPos.value.gElements.length - 1;
+                    this.#finalizeTransition(context, transition, curDataPos.value.gElements, toIndex);
+                }
+
                 context.container.appendChild(curDataPos.value.svgElement);
             }
 
@@ -114,12 +130,18 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 || nextDirection === Direction.HOME
                 || nextDirection === Direction.END
                 || nextDirection === Direction.CTRL_HOME
-                || nextDirection === Direction.CTRL_END) {
+                || nextDirection === Direction.CTRL_END
+                || nextDirection === Direction.UP
+                || nextDirection === Direction.DOWN) {
                 curDataPos = await context.dataPointer.moveTo(nextDirection);
             }
 
-            if (curDataPos.value.startOfExpressions || curDataPos.value.endOfExpressions
-                || curDataPos.value.startOfRow || curDataPos.value.endOfRow) {
+            if (curDataPos.value.startOfExpressions
+                || curDataPos.value.endOfExpressions
+                || curDataPos.value.startOfRow
+                || curDataPos.value.endOfRow
+                || context.userDirection === Direction.UP
+                || context.userDirection === Direction.DOWN) {
                 break;
             } else if (curDataPos.value.colIndex != null) {
                 await this.#updateElement(context, transition, gElements, curDataPos);
@@ -166,6 +188,10 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 } else if (value === Direction.CTRL_HOME) {
                     value = Direction.LEFT;
                 } else if (value === Direction.CTRL_END) {
+                    value = Direction.RIGHT;
+                } else if (value === Direction.UP) {
+                    value = Direction.LEFT;
+                } else if (value === Direction.DOWN) {
                     value = Direction.RIGHT;
                 }
 

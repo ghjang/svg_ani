@@ -10,6 +10,7 @@ steps:
   - "x + \\frac{b}{2a} = \\begin{cases} +\\sqrt{\\left(\\frac{b}{2a}\\right)^2 - \\frac{c}{a}} \\\\ -\\sqrt{\\left(\\frac{b}{2a}\\right)^2 - \\frac{c}{a}} \\end{cases}"
   - "x + \\frac{b}{2a} = \\pm \\sqrt{\\left(\\frac{b}{2a}\\right)^2 - \\frac{c}{a}}"
   - "x = -\\frac{b}{2a} \\pm \\sqrt{\\left(\\frac{b}{2a}\\right)^2 - \\frac{c}{a}}"
+  - "x = -\\frac{b}{2a} \\pm \\sqrt{\\frac{b^2}{4a^2} - \\frac{c}{a}}"
   - "x = -\\frac{b}{2a} \\pm \\sqrt{\\frac{b^2}{4a^2} - \\frac{4ac}{4a^2}}"
   - "x = -\\frac{b}{2a} \\pm \\sqrt{\\frac{b^2 - 4ac}{4a^2}}"
   - "x = -\\frac{b}{2a} \\pm \\frac{\\sqrt{b^2 - 4ac}}{2a}"

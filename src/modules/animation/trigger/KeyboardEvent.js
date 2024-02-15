@@ -8,6 +8,18 @@ class DirectionStrategy {
     }
 }
 
+class VerticalStrategy extends DirectionStrategy {
+    getDirection(event) {
+        let selectedDirection = null;
+        if (event.code === 'ArrowUp') {
+            selectedDirection = Direction.UP;
+        } else if (event.code === 'ArrowDown') {
+            selectedDirection = Direction.DOWN;
+        }
+        return selectedDirection;
+    }
+}
+
 class ForwardOnlyStrategy extends DirectionStrategy {
     getDirection(event) {
         return (event.code === 'ArrowRight') ? Direction.RIGHT : null;
@@ -60,6 +72,13 @@ export class KeyboardTrigger extends BaseTrigger {
     stop() {
         this.#removeKeydownHandler();
         super.stop();
+    }
+}
+
+
+export class VerticalTrigger extends KeyboardTrigger {
+    constructor() {
+        super(new VerticalStrategy());
     }
 }
 

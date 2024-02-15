@@ -49,6 +49,24 @@ export default class DataPointer {
         }
     }
 
+    #moveToUp() {
+        this.#moveToHome();
+        this.#moveToLeft();
+    }
+
+    async #moveToDown() {
+        if (this.data[this.pointerX].value.endOfRow == null) {
+            await this.#moveToEnd();
+            return;
+        }
+
+        await this.#moveToRight();
+
+        if (this.data[this.pointerX].value.startOfRow) {
+            await this.#moveToEnd();
+        }
+    }
+
     async #moveToEnd() {
         while (this.pointerX >= 0 && this.data[this.pointerX].value.endOfRow == null) {
             if (this.pointerX < this.data.length - 1) {
@@ -92,9 +110,8 @@ export default class DataPointer {
                 case Direction.LEFT: this.#moveToLeft(); break;
                 case Direction.RIGHT: await this.#moveToRight(); break;
     
-                case Direction.UP:
-                case Direction.DOWN:
-                    break;
+                case Direction.UP: this.#moveToUp(); break;
+                case Direction.DOWN: await this.#moveToDown(); break;
     
                 case Direction.HOME: this.#moveToHome(); break;
                 case Direction.END: await this.#moveToEnd(); break;
