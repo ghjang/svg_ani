@@ -86,25 +86,27 @@ export default class DataPointer {
         this.pointerX = 0;
     }
 
-    async moveTo(nextDirection) {
-        switch (nextDirection) {
-            case Direction.LEFT: this.#moveToLeft(); break;
-            case Direction.RIGHT: await this.#moveToRight(); break;
-
-            case Direction.UP:
-            case Direction.DOWN:
-                break;
-
-            case Direction.HOME: this.#moveToHome(); break;
-            case Direction.END: await this.#moveToEnd(); break;
-
-            case Direction.CTRL_HOME: await this.#moveToCtrlHome(); break;
-            case Direction.CTRL_END: await this.#moveToCtrlEnd(); break;
-
-            default:
-                throw new Error(`Invalid direction: ${nextDirection}`);
+    async moveTo(...nextDirections) {
+        for (const nextDirection of nextDirections) {
+            switch (nextDirection) {
+                case Direction.LEFT: this.#moveToLeft(); break;
+                case Direction.RIGHT: await this.#moveToRight(); break;
+    
+                case Direction.UP:
+                case Direction.DOWN:
+                    break;
+    
+                case Direction.HOME: this.#moveToHome(); break;
+                case Direction.END: await this.#moveToEnd(); break;
+    
+                case Direction.CTRL_HOME: await this.#moveToCtrlHome(); break;
+                case Direction.CTRL_END: await this.#moveToCtrlEnd(); break;
+    
+                default:
+                    throw new Error(`Invalid direction: ${nextDirection}`);
+            }
         }
-
+    
         return (this.pointerX >= 0 && this.pointerX < this.data.length) ? this.data[this.pointerX] : null;
     }
 }
