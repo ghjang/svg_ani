@@ -15,26 +15,26 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         await MathJax.startup.promise;
     }
 
-    #initTransition(_context, gElements, transition) {
+    #initTransition(_context, transition, gElements) {
         for (let i = 0; i < gElements.length; ++i) {
             const element = gElements[i];
             transition.setStartState(element);
         }
     }
 
-    #finalizeTransition(_context, gElements, transition) {
+    #finalizeTransition(_context, transition, gElements) {
         for (let i = 0; i < gElements.length; ++i) {
             const element = gElements[i];
             transition.setFinalState(element);
         }
     }
 
-    async #applyTransition(element, transition) {
+    async #applyTransition(transition, element) {
         transition.setTargetTransition(element, this.elementAnimationDuration);
         transition.setEndState(element);
     }
 
-    async #updateElement(context, curDataPos, gElements, transition) {
+    async #updateElement(context, transition, gElements, curDataPos) {
         if (this.debug) {
             console.log(
                 `curDataPos.value.colIndex=${curDataPos.value.colIndex}`
@@ -44,7 +44,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
         }
 
         const element = gElements[curDataPos.value.colIndex];
-        await this.#applyTransition(element, transition);
+        await this.#applyTransition(transition, element);
     }
 
     async #loopDataPointer(context, trigger, transition) {
@@ -69,9 +69,9 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
 
             if (curDataPos.value.startOfRow) {
                 if (context.userDirection === Direction.HOME) {
-                    this.#initTransition(context, curDataPos.value.gElements, transition);
+                    this.#initTransition(context, transition, curDataPos.value.gElements);
                 } else if (context.direction === Direction.RIGHT) {
-                    this.#initTransition(context, curDataPos.value.gElements, transition);
+                    this.#initTransition(context, transition, curDataPos.value.gElements);
                 } else if (context.direction === Direction.LEFT) {
                     // NOTE: '왼쪽 진행' 방향이었다면, 미리 앞선 'endOfRow'로 이동시켜
                     //       '왼쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
@@ -80,7 +80,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 }
             } else if (curDataPos.value.endOfRow) {
                 if (context.userDirection === Direction.END) {
-                    this.#finalizeTransition(context, curDataPos.value.gElements, transition);
+                    this.#finalizeTransition(context, transition, curDataPos.value.gElements);
                 } else if (context.direction === Direction.RIGHT) {
                     // NOTE: '오른쪽 진행' 방향이었다면, 미리 다음 'startOfRow'로 이동시켜
                     //       '오른쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
@@ -122,7 +122,7 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 || curDataPos.value.startOfRow || curDataPos.value.endOfRow) {
                 break;
             } else if (curDataPos.value.colIndex != null) {
-                await this.#updateElement(context, curDataPos, gElements, transition);
+                await this.#updateElement(context, transition, gElements, curDataPos);
             } else {
                 throw new Error(`Invalid data: data.value=${JSON.stringify(curDataPos.value)} data.done=${curDataPos.done}`);
             }
