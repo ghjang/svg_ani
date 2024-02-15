@@ -8,6 +8,28 @@ class DirectionStrategy {
     }
 }
 
+class CompositeDirectionStrategy extends DirectionStrategy {
+    constructor() {
+        super();
+        this.strategies = [];
+    }
+
+    add(strategy) {
+        this.strategies.push(strategy);
+        return this;
+    }
+
+    getDirection(event) {
+        for (const strategy of this.strategies) {
+            const direction = strategy.getDirection(event);
+            if (direction !== null) {
+                return direction;
+            }
+        }
+        return null;
+    }
+}
+
 class VerticalStrategy extends DirectionStrategy {
     getDirection(event) {
         let selectedDirection = null;
@@ -60,9 +82,11 @@ export class KeyboardTrigger extends BaseTrigger {
     performAction(_initDelay) {
         this.#onKeydown = (event) => {
             const selectedDirection = this.#strategy.getDirection(event);
-            if (selectedDirection !== null) {
+            if (selectedDirection) {
                 this.#removeKeydownHandler();
                 this.resolveWait({ nextDirection: selectedDirection });
+            } else {
+                // TODO: 처리되지 않은 키에 대해서 처리할 수 있도록 '커스텀 이벤트'를 발생시킬것. 이때 'event, this'를 넘겨서 핸들러쪽에서 적당히 트리거의 동작을 조작할 수 있도록 하면 될 듯,...
             }
         };
 
@@ -76,20 +100,28 @@ export class KeyboardTrigger extends BaseTrigger {
 }
 
 
-export class VerticalTrigger extends KeyboardTrigger {
-    constructor() {
-        super(new VerticalStrategy());
-    }
-}
+export function createKeyboardTrigger(strategyType) {
+    let strategy;
 
-export class ForwardOnlyTrigger extends KeyboardTrigger {
-    constructor() {
-        super(new ForwardOnlyStrategy());
+    switch (strategyType) {
+        case 'vertical':
+            strategy = new VerticalStrategy();
+            break;
+        case 'forwardOnly':
+            strategy = new ForwardOnlyStrategy();
+            break;
+        case 'bidirectional':
+            strategy = new BidirectionalStrategy();
+            break;
+        case 'composite':
+            strategy
+                = new CompositeDirectionStrategy()
+                    .add(new VerticalStrategy())
+                    .add(new BidirectionalStrategy());
+            break;
+        default:
+            throw new Error(`Unknown strategy type: ${strategyType}`);
     }
-}
 
-export class BidirectionalTrigger extends KeyboardTrigger {
-    constructor() {
-        super(new BidirectionalStrategy());
-    }
+    return new KeyboardTrigger(strategy);
 }

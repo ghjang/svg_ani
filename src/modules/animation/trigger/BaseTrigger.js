@@ -12,7 +12,7 @@ export default class BaseTrigger {
 
     stop() {
         if (this.#rejectWait) {
-            this.#rejectWait(new Error('Stopped by user'));
+            this.#rejectWait(new Error('trigger-stopped'));
             this.#rejectWait = null;
         }
         if (this.#resolveWait) {
