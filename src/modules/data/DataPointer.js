@@ -35,62 +35,71 @@ export default class DataPointer {
         return this.data[this.pointerX];
     }
 
+    #moveToLeft() {
+        if (this.pointerX > 0) {
+            --this.pointerX;
+        }
+    }
+
+    async #moveToRight() {
+        if (this.pointerX < this.data.length - 1) {
+            ++this.pointerX;
+        } else if (this.iterator) {
+            await this.#fetchNextElementData(Direction.RIGHT);
+        }
+    }
+
+    async #moveToEnd() {
+        while (this.pointerX >= 0 && this.data[this.pointerX].value.endOfRow == null) {
+            if (this.pointerX < this.data.length - 1) {
+                ++this.pointerX;
+            } else if (this.iterator) {
+                await this.#fetchNextElementData(Direction.END);
+            } else if (this.pointerX >= this.data.length - 1) {
+                break;
+            }
+        }
+    }
+
+    #moveToHome() {
+        while (this.pointerX > 0 && this.data[this.pointerX].value.startOfRow == null) {
+            --this.pointerX;
+        }
+    }
+    
+    async #moveToCtrlEnd() {
+        while (this.pointerX >= 0 && this.data[this.pointerX].value.endOfExpressions == null) {
+            if (this.pointerX < this.data.length - 1) {
+                ++this.pointerX;
+            } else if (this.iterator) {
+                await this.#fetchNextElementData(Direction.CTRL_END);
+            } else if (this.pointerX >= this.data.length - 1) {
+                break;
+            }
+        }
+    }
+
+    async #moveToCtrlHome() {
+        if (this.pointerX < 0) {
+            await this.#fetchNextElementData(Direction.CTRL_HOME);
+        }
+        this.pointerX = 0;
+    }
+
     async moveTo(nextDirection) {
         switch (nextDirection) {
-            case Direction.LEFT:
-                if (this.pointerX > 0) {
-                    --this.pointerX;
-                }
-                break;
-
-            case Direction.RIGHT:
-                if (this.pointerX < this.data.length - 1) {
-                    ++this.pointerX;
-                } else if (this.iterator) {
-                    await this.#fetchNextElementData(nextDirection);
-                }
-                break;
+            case Direction.LEFT: this.#moveToLeft(); break;
+            case Direction.RIGHT: await this.#moveToRight(); break;
 
             case Direction.UP:
             case Direction.DOWN:
                 break;
 
-            case Direction.HOME:
-                while (this.pointerX > 0 && this.data[this.pointerX].value.startOfRow == null) {
-                    --this.pointerX;
-                }
-                break;
+            case Direction.HOME: this.#moveToHome(); break;
+            case Direction.END: await this.#moveToEnd(); break;
 
-            case Direction.END:
-                while (this.pointerX >= 0 && this.data[this.pointerX].value.endOfRow == null) {
-                    if (this.pointerX < this.data.length - 1) {
-                        ++this.pointerX;
-                    } else if (this.iterator) {
-                        await this.#fetchNextElementData(nextDirection);
-                    } else if (this.pointerX >= this.data.length - 1) {
-                        break;
-                    }
-                }
-                break;
-
-            case Direction.CTRL_HOME:
-                if (this.pointerX < 0) {
-                    await this.#fetchNextElementData(nextDirection);
-                }
-                this.pointerX = 0;
-                break;
-
-            case Direction.CTRL_END:
-                while (this.pointerX >= 0 && this.data[this.pointerX].value.endOfExpressions == null) {
-                    if (this.pointerX < this.data.length - 1) {
-                        ++this.pointerX;
-                    } else if (this.iterator) {
-                        await this.#fetchNextElementData(nextDirection);
-                    } else if (this.pointerX >= this.data.length - 1) {
-                        break;
-                    }
-                }
-                break;
+            case Direction.CTRL_HOME: await this.#moveToCtrlHome(); break;
+            case Direction.CTRL_END: await this.#moveToCtrlEnd(); break;
 
             default:
                 throw new Error(`Invalid direction: ${nextDirection}`);
