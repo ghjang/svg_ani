@@ -10,7 +10,7 @@ export default class BaseTrigger {
         });
     }
 
-    stop() {
+    stop(_opts) {
         if (this.#rejectWait) {
             this.#rejectWait(new Error('trigger-stopped'));
             this.#rejectWait = null;

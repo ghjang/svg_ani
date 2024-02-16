@@ -18,6 +18,10 @@ export default class DataPointer {
         return this.mathJaxExprs.length;
     }
 
+    get curPosData() {
+        return (this.pointerX >= 0 && this.pointerX < this.data.length) ? this.data[this.pointerX] : null;
+    }
+
     async #fetchNextElementData(nextDirection) {
         if (this.iterator === null) {
             throw new Error('Iterator is null');
@@ -124,6 +128,6 @@ export default class DataPointer {
             }
         }
     
-        return (this.pointerX >= 0 && this.pointerX < this.data.length) ? this.data[this.pointerX] : null;
+        return this.curPosData;
     }
 }

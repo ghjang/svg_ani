@@ -56,17 +56,17 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
     }
 
     async #loopDataPointer(context, trigger, transition) {
-        let curDataPos = await context.dataPointer.moveTo(context.direction);
+        let curPosData = await context.dataPointer.moveTo(context.direction);
 
         do {
-            if (curDataPos.value.startOfExpressions) {
+            if (curPosData.value.startOfExpressions) {
                 context.direction = Direction.RIGHT;
-                curDataPos = await context.dataPointer.moveTo(context.direction);
-            } else if (curDataPos.value.endOfExpressions) {
+                curPosData = await context.dataPointer.moveTo(context.direction);
+            } else if (curPosData.value.endOfExpressions) {
                 const userDirection = context.userDirection;
 
                 context.direction = Direction.LEFT;
-                curDataPos = await context.dataPointer.moveTo(context.direction);
+                curPosData = await context.dataPointer.moveTo(context.direction);
 
                 context.userDirection = userDirection;
                 if (context.userDirection === Direction.CTRL_END) {
@@ -75,82 +75,88 @@ export default class MathJaxAnimationStrategy extends AbstractAnimationStrategy 
                 }
             }
 
-            if (curDataPos.value.startOfRow) {
+            if (curPosData.value.startOfRow) {
                 if (context.userDirection === Direction.HOME) {
-                    this.#initTransition(context, transition, curDataPos.value.gElements);
+                    this.#initTransition(context, transition, curPosData.value.gElements);
                 } else if (context.direction === Direction.RIGHT) {
-                    this.#initTransition(context, transition, curDataPos.value.gElements);
+                    this.#initTransition(context, transition, curPosData.value.gElements);
                 } else if (context.direction === Direction.LEFT) {
                     // NOTE: '왼쪽 진행' 방향이었다면, 미리 앞선 'endOfRow'로 이동시켜
                     //       '왼쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
-                    curDataPos = await context.dataPointer.moveTo(context.direction);
+                    curPosData = await context.dataPointer.moveTo(context.direction);
                     continue;
                 }
-            } else if (curDataPos.value.endOfRow) {
+            } else if (curPosData.value.endOfRow) {
                 if (context.userDirection === Direction.END || context.userDirection === Direction.DOWN) {
-                    this.#finalizeTransition(context, transition, curDataPos.value.gElements);
+                    this.#finalizeTransition(context, transition, curPosData.value.gElements);
                 } else if (context.direction === Direction.RIGHT) {
                     // NOTE: '오른쪽 진행' 방향이었다면, 미리 다음 'startOfRow'로 이동시켜
                     //       '오른쪽 화살표 키'를 한번 더 누르지 않아도 되도록 함.
-                    curDataPos = await context.dataPointer.moveTo(context.direction);
+                    curPosData = await context.dataPointer.moveTo(context.direction);
                     continue;
                 }
             }
 
-            if (curDataPos.value.svgElement) {
+            if (curPosData.value.svgElement) {
                 if (context.rowExpressionSvg) {
                     context.container.removeChild(context.rowExpressionSvg);
                 }
 
-                context.rowExpressionSvg = curDataPos.value.svgElement;
+                context.rowExpressionSvg = curPosData.value.svgElement;
                 
                 if (context.userDirection === Direction.UP || context.userDirection === Direction.DOWN) {
-                    this.#initTransition(context, transition, curDataPos.value.gElements);
-                    const toIndex = curDataPos.value.colIndex ? curDataPos.value.colIndex : curDataPos.value.gElements.length - 1;
-                    this.#finalizeTransition(context, transition, curDataPos.value.gElements, toIndex);
+                    this.#initTransition(context, transition, curPosData.value.gElements);
+                    const toIndex = curPosData.value.colIndex ? curPosData.value.colIndex : curPosData.value.gElements.length - 1;
+                    this.#finalizeTransition(context, transition, curPosData.value.gElements, toIndex);
                 }
 
-                context.container.appendChild(curDataPos.value.svgElement);
+                context.container.appendChild(curPosData.value.svgElement);
             }
 
-            curDataPos = await this.#handleTriggerEvent(context, curDataPos.value.gElements, trigger, transition);
-        } while (!curDataPos.done);
+            try {
+                curPosData = await this.#handleTriggerEvent(context, curPosData.value.gElements, trigger, transition);
+            } catch (error) {
+                if (error.message !== 'trigger-stopped') {
+                    throw error;
+                }
+                curPosData = context.dataPointer.curPosData;
+            }
+        } while (!curPosData.done);
     }
 
     async #handleTriggerEvent(context, gElements, trigger, transition) {
-        let curDataPos = null;
+        let curPosData = context.dataPointer.curPosData;
 
         do {
             const delay = this.elementAnimationDuration * 0.9;
             const { nextDirection } = await trigger.wait(delay);
             context.direction = nextDirection
 
-            if (curDataPos === null
-                || !context.isDirectionChanged
+            if (!context.isDirectionChanged
                 || nextDirection === Direction.HOME
                 || nextDirection === Direction.END
                 || nextDirection === Direction.CTRL_HOME
                 || nextDirection === Direction.CTRL_END
                 || nextDirection === Direction.UP
                 || nextDirection === Direction.DOWN) {
-                curDataPos = await context.dataPointer.moveTo(nextDirection);
+                curPosData = await context.dataPointer.moveTo(nextDirection);
             }
 
-            if (curDataPos.value.startOfExpressions
-                || curDataPos.value.endOfExpressions
-                || curDataPos.value.startOfRow
-                || curDataPos.value.endOfRow
+            if (curPosData.value.startOfExpressions
+                || curPosData.value.endOfExpressions
+                || curPosData.value.startOfRow
+                || curPosData.value.endOfRow
                 || context.userDirection === Direction.UP
                 || context.userDirection === Direction.DOWN) {
                 break;
-            } else if (curDataPos.value.colIndex != null) {
-                await this.#updateElement(context, transition, gElements, curDataPos);
+            } else if (curPosData.value.colIndex != null) {
+                await this.#updateElement(context, transition, gElements, curPosData);
             } else {
-                throw new Error(`Invalid data: data.value=${JSON.stringify(curDataPos.value)} data.done=${curDataPos.done}`);
+                throw new Error(`Invalid data: data.value=${JSON.stringify(curPosData.value)} data.done=${curPosData.done}`);
             }
-        } while (!curDataPos.done);
+        } while (!curPosData.done);
 
-        return curDataPos;
+        return curPosData;
     }
 
     async animate(exprs, trigger = Triggers.default, transition = new OpacityToggleTransition()) {

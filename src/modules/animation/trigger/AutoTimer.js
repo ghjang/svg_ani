@@ -14,7 +14,7 @@ export default class AutoTimerTrigger extends BaseTrigger {
         }, initDelay);
     }
 
-    stop() {
+    stop(_opts) {
         if (this.#timerId) {
             clearTimeout(this.#timerId);
             this.#timerId = null;

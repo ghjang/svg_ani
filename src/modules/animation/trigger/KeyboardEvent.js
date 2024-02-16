@@ -64,12 +64,15 @@ class BidirectionalStrategy extends DirectionStrategy {
 
 
 export class KeyboardTrigger extends BaseTrigger {
-    #onKeydown = null;
     #strategy = null;
+
+    #onKeydown = null;
+    #stopProcessingKey = false;
 
     constructor(strategy) {
         super();
         this.#strategy = strategy;
+        this.#stopProcessingKey = false;
     }
 
     #removeKeydownHandler() {
@@ -78,11 +81,14 @@ export class KeyboardTrigger extends BaseTrigger {
             this.#onKeydown = null;
         }
     }
-
+    
     performAction(_initDelay) {
+        this.#removeKeydownHandler();
+        this.#stopProcessingKey = false;
+
         this.#onKeydown = (event) => {
             const selectedDirection = this.#strategy.getDirection(event);
-            if (selectedDirection) {
+            if (selectedDirection && !this.#stopProcessingKey) {
                 this.#removeKeydownHandler();
                 this.resolveWait({ nextDirection: selectedDirection });
             } else {
@@ -96,8 +102,17 @@ export class KeyboardTrigger extends BaseTrigger {
         window.addEventListener('keydown', this.#onKeydown);
     }
 
-    stop() {
-        this.#removeKeydownHandler();
+    stop(opts) {
+        if (opts == null) {
+            this.#removeKeydownHandler();
+        } else {
+            if (opts.removeKeydownHandler) {
+                this.#removeKeydownHandler();
+            } else {
+                this.#stopProcessingKey = true;
+            }
+        }
+
         super.stop();
     }
 }
