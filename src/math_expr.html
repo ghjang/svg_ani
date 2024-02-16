@@ -35,7 +35,7 @@
             //const animator = await ExprAnimator.create('mathExprContainer', Triggers.vertical);
             //const animator = await ExprAnimator.create('mathExprContainer', Triggers.forwardOnly);
             //const animator = await ExprAnimator.create('mathExprContainer', Triggers.bidirectional);
-            const animator = await ExprAnimator.create('mathExprContainer', Triggers.composite);
+            const animator = await ExprAnimator.create('mathExprContainer', Triggers.compound);
 
             animator.debug = true;
             await animator.run('/resources/latex/quadratic.yml');

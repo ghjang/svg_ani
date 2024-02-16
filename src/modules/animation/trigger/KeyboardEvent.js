@@ -86,7 +86,10 @@ export class KeyboardTrigger extends BaseTrigger {
                 this.#removeKeydownHandler();
                 this.resolveWait({ nextDirection: selectedDirection });
             } else {
-                // TODO: 처리되지 않은 키에 대해서 처리할 수 있도록 '커스텀 이벤트'를 발생시킬것. 이때 'event, this'를 넘겨서 핸들러쪽에서 적당히 트리거의 동작을 조작할 수 있도록 하면 될 듯,...
+                const customEvent = new CustomEvent(
+                    'unhandledKey', { detail: { event, trigger: this } }
+                );
+                window.dispatchEvent(customEvent);
             }
         };
 
